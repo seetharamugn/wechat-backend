@@ -15,5 +15,5 @@ func UserRouter(routes *gin.RouterGroup) {
 	userService := services.NewUserService(*userRepository)
 	userController := controllers.NewUserController(*userService)
 	routes.POST("/signup", userController.CreateUser)
-	//routes.POST("/update/:username", controllers.Update)
+	routes.PUT("/update/:userId", userController.Update)
 }

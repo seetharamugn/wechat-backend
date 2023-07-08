@@ -4,9 +4,15 @@ import (
 	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-json"
+	"github.com/seetharamugn/wachat/models"
+	"github.com/seetharamugn/wachat/repositories"
 	"net/http"
 	"time"
 )
+
+func CreateAccount(c *gin.Context, account models.WhatsappAccount) (string, error) {
+	return repositories.CreateAccount(c, account)
+}
 
 func SendMsg(c *gin.Context, payload map[string]interface{}, recipient, phoneId, token string) {
 

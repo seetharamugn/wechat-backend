@@ -23,7 +23,7 @@ func NewMongoUserRepository(db *mongo.Client) *MongoUserRepository {
 
 var userCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "users")
 
-func (m *MongoUserRepository) CreateUser(ctx *gin.Context, user models.User) (string, error) {
+func (m *MongoUserRepository) CreateUser(ctx *gin.Context, user models.User) (*mongo.InsertOneResult, error) {
 	password, _ := HashPassword(user.Password)
 	userId := GenerateRandom()
 	newUser := models.User{
@@ -49,28 +49,51 @@ func (m *MongoUserRepository) CreateUser(ctx *gin.Context, user models.User) (st
 			"Error": "Username or email already exists",
 		})
 		ctx.Abort()
-		return "", err
+		return nil, err
 	} else if err != mongo.ErrNoDocuments {
 		// An error occurred during the query
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"Error": "Internal server error",
 		})
 		ctx.Abort()
-		return "", err
+		return nil, err
 	}
 
-	_, err = userCollection.InsertOne(context.TODO(), newUser)
+	resp, err := userCollection.InsertOne(context.TODO(), newUser)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"Error": "Failed to create user",
 		})
 		ctx.Abort()
-		return "", err
+		return nil, err
 	}
 
-	return "Registration Success", nil
+	return resp, nil
 }
 
+func (m *MongoUserRepository) UpdateUser(id int, body models.User) (*mongo.UpdateResult, error) {
+	update := bson.D{
+		{"$set", bson.D{
+			{"firstName", body.FirstName},
+			{"lastName", body.LastName},
+			{"email", body.Email},
+			{"phoneNo", body.PhoneNo},
+			{"userActive", body.UserActive},
+			{"updatedAt", time.Now()},
+		}},
+	}
+
+	// Define the filter to identify the user to update
+	filter := bson.D{{"userId", id}}
+
+	// Perform the update operation
+	result, err := userCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		panic(err)
+	}
+
+	return result, err
+}
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err

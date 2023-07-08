@@ -3,10 +3,28 @@ package controllers
 import (
 	"encoding/csv"
 	"github.com/gin-gonic/gin"
+	"github.com/seetharamugn/wachat/Dao"
 	"github.com/seetharamugn/wachat/models"
 	"github.com/seetharamugn/wachat/services"
 	"net/http"
 )
+
+func CreateAccount(c *gin.Context) {
+	var body models.WhatsappAccount
+	if body.UserId == "" || body.Token == "" || body.PhoneNumber == "" || body.PhoneNumberId == "" || body.BusinessAccountId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	resp, _ := services.CreateAccount(c, body)
+	c.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "Account created successfully",
+		Data:       resp,
+	})
+}
 
 func SendBulkMsg(c *gin.Context) {
 	phone_id := c.Query("phone_id")

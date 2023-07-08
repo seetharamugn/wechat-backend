@@ -6,6 +6,7 @@ import (
 )
 
 func WhatsappRouter(routes *gin.RouterGroup) {
+	routes.POST("/createAccount", controllers.CreateAccount)
 	routes.POST("/send-bulk-message", controllers.SendBulkMsg)
 	routes.POST("/send-message", controllers.SendMessage)
 }
