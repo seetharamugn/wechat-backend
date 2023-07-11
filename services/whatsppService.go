@@ -14,6 +14,10 @@ func CreateAccount(c *gin.Context, account models.WhatsappAccount) (string, erro
 	return repositories.CreateAccount(c, account)
 }
 
+func GetAccessToken(c *gin.Context, userId string) (models.WhatsappAccount, error) {
+	return repositories.GetAccessToken(c, userId)
+}
+
 func SendMsg(c *gin.Context, payload map[string]interface{}, recipient, phoneId, token string) {
 
 	// Serialize the payload to JSON

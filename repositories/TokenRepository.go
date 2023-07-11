@@ -3,6 +3,7 @@ package repositories
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
+	"github.com/seetharamugn/wachat/Dao"
 	"github.com/seetharamugn/wachat/initializers"
 	"github.com/seetharamugn/wachat/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,26 +12,28 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
 	"net/http"
+	"os"
 	"time"
 )
 
 var tokenCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "tokens")
 
 func CreateToken(ctx *gin.Context, user models.User) (interface{}, error) {
+	signature := os.Getenv("JWT_SECRET_KEY")
 	var existingUser models.User
-	err := userCollection.FindOne(context.TODO(), bson.M{"$or": []bson.M{
-		{"username": user.Username},
-	}}).Decode(&existingUser)
+	err := userCollection.FindOne(context.TODO(), bson.M{"$or": []bson.M{{"username": user.Username}}}).Decode(&existingUser)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"Error": "Invalid username or password",
+		ctx.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Data:       nil,
+			Message:    "Invalid username or password",
 		})
 		ctx.Abort()
 		return "", err
 	}
 	CheckPasswordHash(user.Password, existingUser.Password)
-	AccessToken := GenerateAccessToken(ctx, existingUser.UserId, time.Now().Add(time.Hour*24*1).Unix())
-	RefreshToken := GenerateAccessToken(ctx, existingUser.UserId, time.Now().Add(time.Hour*24*30).Unix())
+	AccessToken := GenerateAccessToken(ctx, existingUser.UserId, time.Now().Add(time.Hour*24*1).Unix(), signature)
+	RefreshToken := GenerateAccessToken(ctx, existingUser.UserId, time.Now().Add(time.Hour*24*30).Unix(), signature)
 	token := models.Token{
 		AccessToken:  AccessToken,
 		RefreshToken: RefreshToken,
@@ -38,12 +41,12 @@ func CreateToken(ctx *gin.Context, user models.User) (interface{}, error) {
 		RtExpires:    time.Now().Add(time.Hour * 24 * 30).Unix(),
 	}
 
-	response := map[string]interface{}{
-		"userName":    existingUser.Username,
-		"firstName":   existingUser.FirstName,
-		"lastName":    existingUser.LastName,
-		"userId":      existingUser.UserId,
-		"accessToken": token.AccessToken,
+	response := Dao.User{
+		UserId:      existingUser.UserId,
+		Username:    existingUser.Username,
+		FirstName:   existingUser.FirstName,
+		LastName:    existingUser.LastName,
+		AccessToken: token.AccessToken,
 	}
 	filter := bson.M{"userId": existingUser.UserId}
 	update := bson.D{
@@ -66,17 +69,18 @@ func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
-func GenerateAccessToken(ctx *gin.Context, userId int, unix int64) string {
+func GenerateAccessToken(ctx *gin.Context, userId int, unix int64, signature string) string {
 	AccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    userId,
 		"expiredIn": unix,
 	})
 
-	AccessTokenString, err := AccessToken.SignedString([]byte("secret"))
+	AccessTokenString, err := AccessToken.SignedString([]byte(signature))
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"status": http.StatusInternalServerError,
-			"error":  "Could not generate token"})
+		ctx.JSON(http.StatusInternalServerError, Dao.Response{
+			StatusCode: http.StatusInternalServerError,
+			Data:       nil,
+			Message:    "Could not generate token"})
 		return ""
 	}
 	return AccessTokenString
