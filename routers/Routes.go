@@ -14,7 +14,6 @@ func SetupRouter() *gin.Engine {
 		AllowHeaders:     []string{"Origin"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		AllowAllOrigins:  true,
 		MaxAge:           12 * time.Hour,
 	}))
 	v1 := router.Group("/api/v1")
