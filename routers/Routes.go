@@ -9,15 +9,13 @@ import (
 func SetupRouter() *gin.Engine {
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://conversales-seetharamugn.b4a.run"},
+		AllowOrigins:     []string{"https://conversales-seetharamugn.b4a.run"},
 		AllowMethods:     []string{"PUT", "POST", "GET", "DELETE", "PATCH"},
 		AllowHeaders:     []string{"Origin"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		AllowOriginFunc: func(origin string) bool {
-			return origin == "*"
-		},
-		MaxAge: 12 * time.Hour,
+		AllowAllOrigins:  true,
+		MaxAge:           12 * time.Hour,
 	}))
 	v1 := router.Group("/api/v1")
 	{
