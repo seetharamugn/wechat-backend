@@ -10,10 +10,12 @@ func SetupRouter() *gin.Engine {
 	router.Use(cors.Default())
 	v1 := router.Group("/api/v1")
 	{
-		WhatsappRouter(v1)
 		UserRouter(v1)
 		TokenRoutes(v1)
+		WhatsappRouter(v1)
+		TemplateRoutes(v1)
 		ChatRouter(v1)
+		WebhookRoutes(v1)
 	}
 	return router
 }

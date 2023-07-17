@@ -3,25 +3,13 @@ package controllers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/seetharamugn/wachat/Dao"
-	initializers "github.com/seetharamugn/wachat/initializers"
 	"github.com/seetharamugn/wachat/models"
 	"github.com/seetharamugn/wachat/services"
-	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"strconv"
 )
 
-type UserController struct {
-	service services.UserService
-}
-
-func NewUserController(service services.UserService) *UserController {
-	return &UserController{service: service}
-}
-
-var userCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "users")
-
-func (u *UserController) CreateUser(c *gin.Context) {
+func CreateUser(c *gin.Context) {
 	var user models.User
 	if c.Bind(&user) != nil {
 		c.JSON(http.StatusBadRequest, Dao.Response{
@@ -40,14 +28,7 @@ func (u *UserController) CreateUser(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	resp, err := u.service.CreateUser(c, user)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, Dao.Response{
-			StatusCode: http.StatusInternalServerError,
-			Message:    err.Error(),
-			Data:       nil,
-		})
-	}
+	resp, _ := services.CreateUser(c, user)
 	c.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
 		Message:    "User created successfully",
@@ -56,7 +37,17 @@ func (u *UserController) CreateUser(c *gin.Context) {
 
 }
 
-func (u *UserController) Update(c *gin.Context) {
+func GetUser(c *gin.Context) {
+	userId := c.Param("userId")
+	resp, _ := services.GetUser(c, userId)
+	c.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "User created successfully",
+		Data:       resp,
+	})
+}
+
+func Update(c *gin.Context) {
 	userId := c.Param("userId")
 	id, _ := strconv.Atoi(userId)
 	var body models.User
@@ -64,7 +55,7 @@ func (u *UserController) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	result, err := u.service.UpdateUser(c, id, body)
+	result, err := services.UpdateUser(c, id, body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Dao.Response{
 			StatusCode: http.StatusInternalServerError,
@@ -78,4 +69,14 @@ func (u *UserController) Update(c *gin.Context) {
 			Data:       result,
 		})
 	}
+}
+
+func Delete(c *gin.Context) {
+	userId := c.Param("userId")
+	result, _ := services.DeleteUser(c, userId)
+	c.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "User deleted successfully",
+		Data:       result,
+	})
 }

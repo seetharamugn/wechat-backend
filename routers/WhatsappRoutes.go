@@ -7,5 +7,4 @@ import (
 
 func WhatsappRouter(routes *gin.RouterGroup) {
 	routes.POST("/createAccount", controllers.CreateAccount)
-
 }

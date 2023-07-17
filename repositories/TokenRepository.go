@@ -69,6 +69,7 @@ func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
+
 func GenerateAccessToken(ctx *gin.Context, userId int, unix int64, signature string) string {
 	AccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    userId,

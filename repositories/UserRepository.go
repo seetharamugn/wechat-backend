@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/seetharamugn/wachat/Dao"
 	"github.com/seetharamugn/wachat/initializers"
 	"github.com/seetharamugn/wachat/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,17 +14,9 @@ import (
 	"time"
 )
 
-type MongoUserRepository struct {
-	db *mongo.Client
-}
-
-func NewMongoUserRepository(db *mongo.Client) *MongoUserRepository {
-	return &MongoUserRepository{db}
-}
-
 var userCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "users")
 
-func (m *MongoUserRepository) CreateUser(ctx *gin.Context, user models.User) (*mongo.InsertOneResult, error) {
+func CreateUser(ctx *gin.Context, user models.User) (*mongo.InsertOneResult, error) {
 	password, _ := HashPassword(user.Password)
 	userId := GenerateRandom()
 	newUser := models.User{
@@ -45,15 +38,19 @@ func (m *MongoUserRepository) CreateUser(ctx *gin.Context, user models.User) (*m
 	}}).Decode(&existingUser)
 	if err == nil {
 		// Either username or email already exists
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"Error": "Username or email already exists",
+		ctx.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    "already  username or email exists",
+			Data:       err.Error(),
 		})
 		ctx.Abort()
 		return nil, err
 	} else if err != mongo.ErrNoDocuments {
 		// An error occurred during the query
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": "Internal server error",
+		ctx.JSON(http.StatusInternalServerError, Dao.Response{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Failed to create user",
+			Data:       err.Error(),
 		})
 		ctx.Abort()
 		return nil, err
@@ -61,8 +58,10 @@ func (m *MongoUserRepository) CreateUser(ctx *gin.Context, user models.User) (*m
 
 	resp, err := userCollection.InsertOne(context.TODO(), newUser)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": "Failed to create user",
+		ctx.JSON(http.StatusInternalServerError, Dao.Response{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Failed to create user",
+			Data:       err.Error(),
 		})
 		ctx.Abort()
 		return nil, err
@@ -71,7 +70,22 @@ func (m *MongoUserRepository) CreateUser(ctx *gin.Context, user models.User) (*m
 	return resp, nil
 }
 
-func (m *MongoUserRepository) UpdateUser(id int, body models.User) (*mongo.UpdateResult, error) {
+func GetUser(ctx *gin.Context, userId string) (models.User, error) {
+	var user models.User
+	err := userCollection.FindOne(context.TODO(), bson.M{"userId": userId}).Decode(&user)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, Dao.Response{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Failed to get user",
+			Data:       err.Error(),
+		})
+		ctx.Abort()
+		return user, err
+	}
+	return user, nil
+}
+
+func UpdateUser(id int, body models.User) (*mongo.UpdateResult, error) {
 	update := bson.D{
 		{"$set", bson.D{
 			{"firstName", body.FirstName},
@@ -101,11 +115,33 @@ func HashPassword(password string) (string, error) {
 
 func GenerateRandom() int {
 	randNumber := 10000000 + rand.Intn(99999999-10000000)
-	//find the userid form the user collection if it already exists then generate another one otherwise return the generated one
 	var user models.User
 	err := userCollection.FindOne(context.TODO(), bson.M{"userId": randNumber}).Decode(&user)
 	if err != nil {
 		return randNumber
 	}
 	return GenerateRandom()
+}
+
+func DeleteUser(ctx *gin.Context, userId string) (*mongo.DeleteResult, error) {
+	var existingUser models.User
+	err := userCollection.FindOne(context.TODO(), bson.M{"templateId": userId}).Decode(&existingUser)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, Dao.Response{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Failed to get user",
+			Data:       err.Error(),
+		})
+		return nil, err
+	}
+	resp, err := userCollection.DeleteOne(context.TODO(), bson.M{"userId": userId})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, Dao.Response{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Failed to delete user",
+			Data:       err.Error(),
+		})
+		return nil, err
+	}
+	return resp, nil
 }

@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/seetharamugn/wachat/Dao"
 	"github.com/seetharamugn/wachat/initializers"
@@ -40,7 +39,6 @@ func CreateAccount(ctx *gin.Context, account models.WhatsappAccount) (string, er
 }
 
 func GetAccessToken(ctx *gin.Context, userId string) (models.WhatsappAccount, error) {
-	//find the data using the userId
 	userid, _ := strconv.Atoi(userId)
 	var account models.WhatsappAccount
 	err := WaAccountCollection.FindOne(context.TODO(), bson.M{"userId": userid}).Decode(&account)
@@ -53,12 +51,10 @@ func GetAccessToken(ctx *gin.Context, userId string) (models.WhatsappAccount, er
 		ctx.Abort()
 		return models.WhatsappAccount{}, err
 	}
-	fmt.Println(account)
 	return account, nil
 }
 
 func UpdateAccessToken(ctx *gin.Context, userId int, accessToken string) (string, error) {
-	//find the data using the userId
 	_, err := WaAccountCollection.UpdateOne(context.TODO(), models.WhatsappAccount{UserId: userId}, models.WhatsappAccount{Token: accessToken})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{
@@ -70,7 +66,6 @@ func UpdateAccessToken(ctx *gin.Context, userId int, accessToken string) (string
 	return "Access Token Updated", nil
 }
 func DeleteAccessToken(ctx *gin.Context, userId int) (string, error) {
-	//find the data using the userId
 	_, err := WaAccountCollection.DeleteOne(context.TODO(), models.WhatsappAccount{UserId: userId})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{

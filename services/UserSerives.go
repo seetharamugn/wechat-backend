@@ -7,18 +7,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type UserService struct {
-	mongoRepository repositories.MongoUserRepository
+func CreateUser(ctx *gin.Context, user models.User) (*mongo.InsertOneResult, error) {
+	return repositories.CreateUser(ctx, user)
 }
 
-func NewUserService(repository repositories.MongoUserRepository) *UserService {
-	return &UserService{mongoRepository: repository}
+func GetUser(ctx *gin.Context, userId string) (models.User, error) {
+	return repositories.GetUser(ctx, userId)
 }
 
-func (service *UserService) CreateUser(ctx *gin.Context, user models.User) (*mongo.InsertOneResult, error) {
-	return service.mongoRepository.CreateUser(ctx, user)
+func UpdateUser(c *gin.Context, id int, body models.User) (*mongo.UpdateResult, error) {
+	return repositories.UpdateUser(id, body)
 }
 
-func (service *UserService) UpdateUser(c *gin.Context, id int, body models.User) (*mongo.UpdateResult, error) {
-	return service.mongoRepository.UpdateUser(id, body)
+func DeleteUser(c *gin.Context, userId string) (*mongo.DeleteResult, error) {
+	return repositories.DeleteUser(c, userId)
 }

@@ -6,6 +6,23 @@ type Body struct {
 	MessageBody string `json:"messageBody"`
 }
 
+// TemplateMessage Body
+type TemplateMessage struct {
+	MessagingProduct string   `json:"messaging_product"`
+	RecipientType    string   `json:"recipient_type"`
+	To               string   `json:"to"`
+	Type             string   `json:"type"`
+	Template         Template `json:"template"`
+}
+type Template struct {
+	Name     string   `json:"name"`
+	Language Language `json:"language"`
+}
+type Language struct {
+	Code string `json:"code"`
+}
+
+// TextMessage Body
 type TextMessage struct {
 	MessagingProduct string `json:"messaging_product"`
 	RecipientType    string `json:"recipient_type"`
@@ -17,6 +34,8 @@ type Text struct {
 	PreviewUrl bool   `json:"preview_url"`
 	Body       string `json:"body"`
 }
+
+// ImageMessage Body
 type ImageMessage struct {
 	MessagingProduct string `json:"messaging_product"`
 	RecipientType    string `json:"recipient_type"`
@@ -29,6 +48,20 @@ type Image struct {
 	Link string `json:"link"`
 }
 
+// VideoMessage Body
+type VideoMessage struct {
+	MessagingProduct string `json:"messaging_product"`
+	RecipientType    string `json:"recipient_type"`
+	To               string `json:"to"`
+	Type             string `json:"type"`
+	Video            Video  `json:"video"`
+}
+type Video struct {
+	Link    string `json:"link"`
+	Caption string `json:"caption"`
+}
+
+// LocationMessage Body
 type LocationMessage struct {
 	MessagingProduct string   `json:"messaging_product"`
 	RecipientType    string   `json:"recipient_type"`
@@ -43,6 +76,7 @@ type Location struct {
 	Address   string  `json:"address"`
 }
 
+// TextReply Body
 type TextReply struct {
 	MessagingProduct string `json:"messaging_product"`
 	Context          struct {
