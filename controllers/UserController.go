@@ -38,11 +38,21 @@ func CreateUser(c *gin.Context) {
 }
 
 func GetUser(c *gin.Context) {
-	userId := c.Param("userId")
-	resp, _ := services.GetUser(c, userId)
+	userId := c.Query("userId")
+	newUserId, _ := strconv.Atoi(userId)
+	if userId == "" {
+		c.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    "Required UserId",
+			Data:       nil,
+		})
+		c.Abort()
+		return
+	}
+	resp, _ := services.GetUser(c, newUserId)
 	c.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
-		Message:    "User created successfully",
+		Message:    "User get successfully",
 		Data:       resp,
 	})
 }

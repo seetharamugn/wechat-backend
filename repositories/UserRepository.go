@@ -70,7 +70,7 @@ func CreateUser(ctx *gin.Context, user models.User) (*mongo.InsertOneResult, err
 	return resp, nil
 }
 
-func GetUser(ctx *gin.Context, userId string) (models.User, error) {
+func GetUser(ctx *gin.Context, userId int) (models.User, error) {
 	var user models.User
 	err := userCollection.FindOne(context.TODO(), bson.M{"userId": userId}).Decode(&user)
 	if err != nil {

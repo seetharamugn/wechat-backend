@@ -11,7 +11,7 @@ func CreateUser(ctx *gin.Context, user models.User) (*mongo.InsertOneResult, err
 	return repositories.CreateUser(ctx, user)
 }
 
-func GetUser(ctx *gin.Context, userId string) (models.User, error) {
+func GetUser(ctx *gin.Context, userId int) (models.User, error) {
 	return repositories.GetUser(ctx, userId)
 }
 
