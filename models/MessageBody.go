@@ -4,6 +4,7 @@ type Body struct {
 	UserId      int    `json:"userId"`
 	MessageTo   string `json:"messageTo"`
 	MessageBody string `json:"messageBody"`
+	MessageId   string `json:"messageId"`
 }
 
 // TemplateMessage Body
@@ -78,14 +79,17 @@ type Location struct {
 
 // TextReply Body
 type TextReply struct {
-	MessagingProduct string `json:"messaging_product"`
-	Context          struct {
-		MessageId string `json:"message_id"`
-	}
-	To   string `json:"to"`
-	Type string `json:"type"`
-	Text struct {
-		PreviewUrl bool   `json:"preview_url"`
-		Body       string `json:"body"`
-	}
+	MessagingProduct string    `json:"messaging_product"`
+	RecipientType    string    `json:"recipient_type"`
+	To               string    `json:"to"`
+	Context          Context   `json:"context"`
+	Type             string    `json:"type"`
+	Text             ReplyText `json:"text"`
+}
+type Context struct {
+	MessageId string `json:"message_id"`
+}
+type ReplyText struct {
+	PreviewUrl bool   `json:"preview_url"`
+	Body       string `json:"body"`
 }

@@ -13,3 +13,14 @@ type User struct {
 	LastName    string `json:"lastName"`
 	AccessToken string `json:"accessToken"`
 }
+
+type ResponseMessage struct {
+	MessagingProduct string `json:"messaging_product"`
+	Contacts         []struct {
+		Input string `json:"input"`
+		WaId  string `json:"wa_id"`
+	}
+	Messages []struct {
+		Id string `json:"id"`
+	}
+}

@@ -14,6 +14,9 @@ func SendTextMessage(c *gin.Context, messageBody models.Body) (interface{}, erro
 	return repositories.SendTextMessage(c, messageBody)
 
 }
+func SendReplyToTextMessage(c *gin.Context, messageBody models.Body) (interface{}, error) {
+	return repositories.SendReplyToTextMessage(c, messageBody)
+}
 
 func SendImageMessage(c *gin.Context, messageBody models.Body) (interface{}, error) {
 	return repositories.SendImageMessage(c, messageBody)

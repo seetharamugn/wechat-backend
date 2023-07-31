@@ -63,6 +63,23 @@ func SendTextMessage(c *gin.Context) {
 	})
 }
 
+func SendReplyToTextMessage(c *gin.Context) {
+	var requestBody models.Body
+	if err := c.BindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Data:       nil})
+		return
+	}
+	response, _ := services.SendReplyToTextMessage(c, requestBody)
+	c.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "Message sent successfully",
+		Data:       response,
+	})
+}
+
 func SendImageMessage(c *gin.Context) {
 
 	var requestBody models.Body

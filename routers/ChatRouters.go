@@ -8,6 +8,7 @@ import (
 func ChatRouter(routes *gin.RouterGroup) {
 	routes.POST("/sendBulkMessage", controllers.SendBulkMessage)
 	routes.POST("/sendMessage", controllers.SendTextMessage)
+	routes.POST("/sendReplyToTextMessage", controllers.SendReplyToTextMessage)
 	routes.POST("/sendImage", controllers.SendImageMessage)
 	routes.POST("/sendVideo", controllers.SendVideoMessage)
 }
