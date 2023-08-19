@@ -11,8 +11,6 @@ func init() {
 }
 
 func main() {
-
-	// Set up the Gin routers
 	route := routers.SetupRouter()
 	route.GET("/", func(context *gin.Context) {
 		context.JSON(200, gin.H{
