@@ -1,11 +1,7 @@
 {
-  "trailingSlash":false,
-  "rewrites":
-  [
-    {
-      "source":"(.*)",
-      "destination":"main.go"
+  "build": {
+    "env": {
+      "GO_BUILD_FLAGS": "-ldflags '-s -w'"
     }
-  ]
-
+  }
 }
