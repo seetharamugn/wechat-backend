@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"os"
 )
 
-var VERIFY_TOKEN string
-
 func VerifyWebhook(ctx *gin.Context) {
+	VERIFY_TOKEN := os.Getenv("VERIFY_TOKEN")
 	mode := ctx.Query("hub.mode")
 	token := ctx.Query("hub.verify_token")
 	challenge := ctx.Query("hub.challenge")
