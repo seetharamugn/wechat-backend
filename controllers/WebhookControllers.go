@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/seetharamugn/wachat/Dao"
@@ -27,5 +28,13 @@ func HandleIncomingMessage(ctx *gin.Context) {
 		ctx.String(http.StatusBadRequest, "Invalid request")
 		return
 	}
-	fmt.Println(messageBody)
+
+	jsonBytes, err := json.Marshal(messageBody)
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, "Error marshaling JSON")
+		return
+	}
+
+	jsonString := string(jsonBytes)
+	fmt.Println(jsonString)
 }
