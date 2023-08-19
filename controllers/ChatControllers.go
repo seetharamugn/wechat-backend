@@ -114,3 +114,21 @@ func SendVideoMessage(c *gin.Context) {
 		Data:       response,
 	})
 }
+
+func SendPdfMessage(c *gin.Context) {
+	var requestBody models.Body
+	if err := c.BindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Data:       nil})
+		c.Abort()
+		return
+	}
+	response, _ := services.SendPdfMessage(c, requestBody)
+	c.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "Message sent successfully",
+		Data:       response,
+	})
+}

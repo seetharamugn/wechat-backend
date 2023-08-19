@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	initializers "github.com/seetharamugn/wachat/initializers"
 	"github.com/seetharamugn/wachat/routers"
 )
@@ -13,5 +14,10 @@ func main() {
 
 	// Set up the Gin routers
 	route := routers.SetupRouter()
+	route.GET("/", func(context *gin.Context) {
+		context.JSON(200, gin.H{
+			"message": "okay",
+		})
+	})
 	route.Run()
 }

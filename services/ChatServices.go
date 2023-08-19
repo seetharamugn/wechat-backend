@@ -25,3 +25,6 @@ func SendImageMessage(c *gin.Context, messageBody models.Body) (interface{}, err
 func SendVideoMessage(c *gin.Context, messageBody models.Body) (interface{}, error) {
 	return repositories.SendVideoMessage(c, messageBody)
 }
+func SendPdfMessage(c *gin.Context, messageBody models.Body) (interface{}, error) {
+	return repositories.SendPdfMessage(c, messageBody)
+}

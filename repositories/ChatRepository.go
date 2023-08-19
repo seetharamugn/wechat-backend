@@ -219,6 +219,30 @@ func SendVideoMessage(ctx *gin.Context, messageBody models.Body) (interface{}, e
 	return response, nil
 }
 
+func SendPdfMessage(ctx *gin.Context, messageBody models.Body) (interface{}, error) {
+	WaAccount, err := GetAccessToken(ctx, strconv.Itoa(messageBody.UserId))
+	if err != nil {
+		return nil, err
+	}
+	payload := models.DocumentMessage{
+		MessagingProduct: "whatsapp",
+		RecipientType:    "individual",
+		To:               messageBody.MessageTo,
+		Type:             "document",
+		Document: models.Document{
+			Link: messageBody.MessageBody,
+		},
+	}
+	jsonBody, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	response, err := SendMessage(jsonBody, WaAccount.Token, WaAccount.PhoneNumberId, WaAccount.ApiVersion)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
 func SendMessage(payload []byte, token string, phoneNumberId int, apiVersion string) (Dao.ResponseMessage, error) {
 	fbUrl := waUrl + "" + apiVersion + "/" + strconv.Itoa(phoneNumberId) + "/messages"
 	fmt.Println(fbUrl)

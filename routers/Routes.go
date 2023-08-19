@@ -10,11 +10,6 @@ func SetupRouter() *gin.Engine {
 	router.Use(cors.Default())
 	v1 := router.Group("/api/v1")
 	{
-		v1.GET("/", func(context *gin.Context) {
-			context.JSON(200, gin.H{
-				"message": "okay",
-			})
-		})
 		UserRouter(v1)
 		TokenRoutes(v1)
 		WhatsappRouter(v1)
