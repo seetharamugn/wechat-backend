@@ -64,10 +64,10 @@ func GenerateRandomTemplateId() int {
 	return GenerateRandomTemplateId()
 }
 
-func GetTemplates(ctx *gin.Context, templateId string) (interface{}, error) {
+func GetTemplates(ctx *gin.Context, templateName string) (interface{}, error) {
 	var templates models.MessageTemplate
-	if templateId != "" {
-		err := templateCollection.FindOne(context.TODO(), bson.M{"templateId": templateId}).Decode(&templates)
+	if templateName != "" {
+		err := templateCollection.FindOne(context.TODO(), bson.M{"templatename": templateName}).Decode(&templates)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, Dao.Response{
 				StatusCode: http.StatusInternalServerError,

@@ -9,8 +9,8 @@ import (
 func CreateTemplate(ctx *gin.Context, template models.MessageTemplate) (interface{}, error) {
 	return repositories.CreateTemplate(ctx, template)
 }
-func GetTemplates(ctx *gin.Context, templateId string) (interface{}, error) {
-	return repositories.GetTemplates(ctx, templateId)
+func GetTemplates(ctx *gin.Context, templateName string) (interface{}, error) {
+	return repositories.GetTemplates(ctx, templateName)
 }
 func UpdateTemplate(ctx *gin.Context, templateId string, template models.MessageTemplate) (interface{}, error) {
 	return repositories.UpdateTemplate(ctx, templateId, template)
