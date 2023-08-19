@@ -18,17 +18,17 @@ var templateCollection *mongo.Collection = initializers.OpenCollection(initializ
 func CreateTemplate(ctx *gin.Context, template models.MessageTemplate) (interface{}, error) {
 	templateId := GenerateRandomTemplateId()
 	newTemplate := models.MessageTemplate{
-		TemplateId:        templateId,
-		TemplateName:      template.TemplateName,
-		TemplateCategory:  template.TemplateCategory,
-		TemplateContent:   template.TemplateContent,
-		TemplateStatus:    "INREVIEW",
-		TemplateCreatedAt: time.Now(),
-		TemplateUpdatedAt: time.Now(),
+		TemplateId: templateId,
+		Name:       template.Name,
+		Category:   template.Category,
+		Content:    template.Content,
+		Status:     "INREVIEW",
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 	var existingTemplate models.MessageTemplate
 	err := templateCollection.FindOne(context.TODO(), bson.M{"$or": []bson.M{
-		{"TemplateName": template.TemplateName},
+		{"Name": template.Name},
 	}}).Decode(&existingTemplate)
 	if err == nil {
 		// Either username or email already exists
@@ -64,10 +64,10 @@ func GenerateRandomTemplateId() int {
 	return GenerateRandomTemplateId()
 }
 
-func GetTemplates(ctx *gin.Context, templateName string) (interface{}, error) {
+func GetTemplates(ctx *gin.Context, name string) (interface{}, error) {
 	var templates models.MessageTemplate
-	if templateName != "" {
-		err := templateCollection.FindOne(context.TODO(), bson.M{"templatename": templateName}).Decode(&templates)
+	if name != "" {
+		err := templateCollection.FindOne(context.TODO(), bson.M{"name": name}).Decode(&templates)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, Dao.Response{
 				StatusCode: http.StatusInternalServerError,
@@ -116,13 +116,13 @@ func UpdateTemplate(ctx *gin.Context, templateId string, template models.Message
 		return nil, err
 	}
 	newTemplate := models.MessageTemplate{
-		TemplateName:      template.TemplateName,
-		TemplateCategory:  template.TemplateCategory,
-		TemplateContent:   template.TemplateContent,
-		TemplateStatus:    template.TemplateStatus,
-		TemplateLanguage:  template.TemplateLanguage,
-		TemplateFooter:    template.TemplateFooter,
-		TemplateUpdatedAt: time.Now(),
+		Name:      template.Name,
+		Category:  template.Category,
+		Content:   template.Content,
+		Status:    template.Status,
+		Language:  template.Language,
+		Footer:    template.Footer,
+		UpdatedAt: time.Now(),
 	}
 	resp, err := templateCollection.ReplaceOne(context.TODO(), bson.M{"templateId": templateId}, newTemplate)
 	if err != nil {

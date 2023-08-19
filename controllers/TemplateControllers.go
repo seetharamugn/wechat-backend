@@ -15,7 +15,7 @@ func CreateTemplate(ctx *gin.Context) {
 		ctx.Abort()
 		return
 	}
-	if body.TemplateName == "" || body.TemplateCategory == "" || body.TemplateContent == "" || body.TemplateLanguage == "" {
+	if body.Name == "" || body.Category == "" || body.Content == "" || body.Language == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Template"})
 		ctx.Abort()
 		return
@@ -28,8 +28,8 @@ func CreateTemplate(ctx *gin.Context) {
 	})
 }
 func GetTemplate(ctx *gin.Context) {
-	templateName := ctx.Param("name")
-	resp, _ := services.GetTemplates(ctx, templateName)
+	name := ctx.Query("name")
+	resp, _ := services.GetTemplates(ctx, name)
 	ctx.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
 		Message:    "success",

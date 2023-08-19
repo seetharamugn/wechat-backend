@@ -85,28 +85,38 @@ func GetUser(ctx *gin.Context, userId int) (models.User, error) {
 	return user, nil
 }
 
-func UpdateUser(id int, body models.User) (*mongo.UpdateResult, error) {
-	update := bson.D{
-		{"$set", bson.D{
-			{"firstName", body.FirstName},
-			{"lastName", body.LastName},
-			{"email", body.Email},
-			{"phoneNo", body.PhoneNo},
-			{"userActive", body.UserActive},
-			{"updatedAt", time.Now()},
-		}},
-	}
-
-	// Define the filter to identify the user to update
-	filter := bson.D{{"userId", id}}
-
-	// Perform the update operation
-	result, err := userCollection.UpdateOne(context.TODO(), filter, update)
+func UpdateUser(ctx *gin.Context, userId int, body models.User) (*mongo.UpdateResult, error) {
+	var existingUser models.User
+	err := userCollection.FindOne(context.TODO(), bson.M{"userId": userId}).Decode(&existingUser)
 	if err != nil {
-		panic(err)
+		ctx.JSON(http.StatusInternalServerError, Dao.Response{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Failed to get user",
+			Data:       err.Error(),
+		})
+		return nil, err
+	}
+	updateUser := models.User{
+		FirstName:  body.FirstName,
+		LastName:   body.LastName,
+		Username:   body.Username,
+		Email:      body.Email,
+		PhoneNo:    body.PhoneNo,
+		UserActive: body.UserActive,
+		UpdatedAt:  time.Now(),
 	}
 
-	return result, err
+	resp, err := userCollection.ReplaceOne(context.TODO(), bson.M{"userId": userId}, updateUser)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, Dao.Response{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Failed to update template",
+			Data:       err.Error(),
+		})
+		ctx.Abort()
+		return nil, err
+	}
+	return resp, err
 }
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
@@ -123,15 +133,16 @@ func GenerateRandom() int {
 	return GenerateRandom()
 }
 
-func DeleteUser(ctx *gin.Context, userId string) (*mongo.DeleteResult, error) {
+func DeleteUser(ctx *gin.Context, userId int) (*mongo.DeleteResult, error) {
 	var existingUser models.User
-	err := userCollection.FindOne(context.TODO(), bson.M{"templateId": userId}).Decode(&existingUser)
+	err := userCollection.FindOne(context.TODO(), bson.M{"userId": userId}).Decode(&existingUser)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "Failed to get user",
 			Data:       err.Error(),
 		})
+		ctx.Abort()
 		return nil, err
 	}
 	resp, err := userCollection.DeleteOne(context.TODO(), bson.M{"userId": userId})

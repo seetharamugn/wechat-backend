@@ -58,7 +58,7 @@ func GetUser(c *gin.Context) {
 }
 
 func Update(c *gin.Context) {
-	userId := c.Param("userId")
+	userId := c.Query("userId")
 	id, _ := strconv.Atoi(userId)
 	var body models.User
 	if err := c.ShouldBindJSON(&body); err != nil {
@@ -82,8 +82,9 @@ func Update(c *gin.Context) {
 }
 
 func Delete(c *gin.Context) {
-	userId := c.Param("userId")
-	result, _ := services.DeleteUser(c, userId)
+	userId := c.Query("userId")
+	loginUserId, _ := strconv.Atoi(userId)
+	result, _ := services.DeleteUser(c, loginUserId)
 	c.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
 		Message:    "User deleted successfully",

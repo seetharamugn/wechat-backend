@@ -8,6 +8,6 @@ import (
 func UserRouter(routes *gin.RouterGroup) {
 	routes.POST("/signup", controllers.CreateUser)
 	routes.GET("/getUser", controllers.GetUser)
-	routes.PUT("/update/:userId", controllers.Update)
-	routes.DELETE("/delete/:userId", controllers.Delete)
+	routes.PUT("/update", controllers.Update)
+	routes.DELETE("/delete", controllers.Delete)
 }

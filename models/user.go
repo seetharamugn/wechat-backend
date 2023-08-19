@@ -3,15 +3,15 @@ package models
 import "time"
 
 type User struct {
-	UserId     int       `bson:"userId"`
-	FirstName  string    `bson:"firstName"`
-	LastName   string    `bson:"lastName"`
-	Username   string    `bson:"username"`
-	Password   string    `bson:"password"`
-	Email      string    `bson:"email"`
-	PhoneNo    string    `bson:"phoneNo"`
-	UserActive bool      `bson:"userActive"`
-	CreatedAt  time.Time `bson:"createdAt"`
-	UpdatedAt  time.Time `bson:"updatedAt"`
-	DeletedAt  time.Time `bson:"deletedAt"`
+	UserId     int       `bson:"userId" json:"userId"`
+	FirstName  string    `bson:"firstName" json:"firstName"`
+	LastName   string    `bson:"lastName" json:"lastName"`
+	Username   string    `bson:"username" json:"username"`
+	Password   string    `bson:"password" json:"password"`
+	Email      string    `bson:"email" json:"email"`
+	PhoneNo    string    `bson:"phoneNo" json:"phoneNo"`
+	UserActive bool      `bson:"userActive" json:"userActive"`
+	CreatedAt  time.Time `bson:"createdAt" json:"createdAt"`
+	UpdatedAt  time.Time `bson:"updatedAt" json:"updatedAt"`
+	DeletedAt  time.Time `bson:"deletedAt" json:"deletedAt"`
 }

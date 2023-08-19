@@ -15,10 +15,10 @@ func GetUser(ctx *gin.Context, userId int) (models.User, error) {
 	return repositories.GetUser(ctx, userId)
 }
 
-func UpdateUser(c *gin.Context, id int, body models.User) (*mongo.UpdateResult, error) {
-	return repositories.UpdateUser(id, body)
+func UpdateUser(ctx *gin.Context, id int, body models.User) (*mongo.UpdateResult, error) {
+	return repositories.UpdateUser(ctx, id, body)
 }
 
-func DeleteUser(c *gin.Context, userId string) (*mongo.DeleteResult, error) {
+func DeleteUser(c *gin.Context, userId int) (*mongo.DeleteResult, error) {
 	return repositories.DeleteUser(c, userId)
 }
