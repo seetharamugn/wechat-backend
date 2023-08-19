@@ -1,7 +1,9 @@
 {
-  "build": {
-    "env": {
-      "GO_BUILD_FLAGS": "-ldflags '-s -w'"
+  "functions": {
+    "hello": {
+      "handler": "./main.go",
+      "memory": 128,
+      "maxDuration": 10
     }
   }
 }
