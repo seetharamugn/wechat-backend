@@ -6,7 +6,7 @@ type User struct {
 	UserId     int       `bson:"userId" json:"userId"`
 	FirstName  string    `bson:"firstName" json:"firstName"`
 	LastName   string    `bson:"lastName" json:"lastName"`
-	Username   string    `bson:"username" json:"username"`
+	Username   string    `bson:"userName" json:"userName"`
 	Password   string    `bson:"password" json:"password"`
 	Email      string    `bson:"email" json:"email"`
 	PhoneNo    string    `bson:"phoneNo" json:"phoneNo"`

@@ -28,13 +28,7 @@ func CreateUser(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	resp, _ := services.CreateUser(c, user)
-	c.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "User created successfully",
-		Data:       resp,
-	})
-
+	services.CreateUser(c, user)
 }
 
 func GetUser(c *gin.Context) {
@@ -49,12 +43,8 @@ func GetUser(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	resp, _ := services.GetUser(c, newUserId)
-	c.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "User get successfully",
-		Data:       resp,
-	})
+	services.GetUser(c, newUserId)
+
 }
 
 func Update(c *gin.Context) {
@@ -84,10 +74,5 @@ func Update(c *gin.Context) {
 func Delete(c *gin.Context) {
 	userId := c.Query("userId")
 	loginUserId, _ := strconv.Atoi(userId)
-	result, _ := services.DeleteUser(c, loginUserId)
-	c.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "User deleted successfully",
-		Data:       result,
-	})
+	services.DeleteUser(c, loginUserId)
 }

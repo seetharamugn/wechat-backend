@@ -18,7 +18,7 @@ import (
 
 var tokenCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "tokens")
 
-func CreateToken(ctx *gin.Context, user models.User) (interface{}, error) {
+func CreateToken(ctx *gin.Context, user models.User) {
 	signature := os.Getenv("JWT_SECRET_KEY")
 	var existingUser models.User
 	err := userCollection.FindOne(context.TODO(), bson.M{"$or": []bson.M{{"username": user.Username}}}).Decode(&existingUser)
@@ -29,7 +29,7 @@ func CreateToken(ctx *gin.Context, user models.User) (interface{}, error) {
 			Message:    "Invalid username or password",
 		})
 		ctx.Abort()
-		return "", err
+		return
 	}
 	CheckPasswordHash(user.Password, existingUser.Password)
 	AccessToken := GenerateAccessToken(ctx, existingUser.UserId, time.Now().Add(time.Hour*24*1).Unix(), signature)
@@ -62,7 +62,10 @@ func CreateToken(ctx *gin.Context, user models.User) (interface{}, error) {
 	if err != nil {
 		panic(err)
 	}
-	return response, err
+	ctx.JSON(http.StatusOK, gin.H{
+		"statusCode": http.StatusOK,
+		"data":       response,
+	})
 }
 
 func CheckPasswordHash(password, hash string) bool {

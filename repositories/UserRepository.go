@@ -16,7 +16,7 @@ import (
 
 var userCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "users")
 
-func CreateUser(ctx *gin.Context, user models.User) (*mongo.InsertOneResult, error) {
+func CreateUser(ctx *gin.Context, user models.User) {
 	password, _ := HashPassword(user.Password)
 	userId := GenerateRandom()
 	newUser := models.User{
@@ -29,31 +29,27 @@ func CreateUser(ctx *gin.Context, user models.User) (*mongo.InsertOneResult, err
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-
 	// Check if username or email already exist
 	var existingUser models.User
-	err := userCollection.FindOne(context.TODO(), bson.M{"$or": []bson.M{
-		{"username": user.Username},
-		{"email": user.Email},
-	}}).Decode(&existingUser)
+	err := userCollection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
 	if err == nil {
 		// Either username or email already exists
 		ctx.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
 			Message:    "already  username or email exists",
-			Data:       err.Error(),
+			Data:       nil,
 		})
 		ctx.Abort()
-		return nil, err
+		return
 	} else if err != mongo.ErrNoDocuments {
 		// An error occurred during the query
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "Failed to create user",
-			Data:       err.Error(),
+			Data:       nil,
 		})
 		ctx.Abort()
-		return nil, err
+		return
 	}
 
 	resp, err := userCollection.InsertOne(context.TODO(), newUser)
@@ -61,28 +57,36 @@ func CreateUser(ctx *gin.Context, user models.User) (*mongo.InsertOneResult, err
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "Failed to create user",
-			Data:       err.Error(),
+			Data:       nil,
 		})
 		ctx.Abort()
-		return nil, err
+		return
 	}
-
-	return resp, nil
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "User created successfully",
+		Data:       resp,
+	})
 }
 
-func GetUser(ctx *gin.Context, userId int) (models.User, error) {
+func GetUser(ctx *gin.Context, userId int) {
 	var user models.User
 	err := userCollection.FindOne(context.TODO(), bson.M{"userId": userId}).Decode(&user)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "Failed to get user",
-			Data:       err.Error(),
+			Data:       nil,
 		})
 		ctx.Abort()
-		return user, err
+		return
 	}
-	return user, nil
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "User get successfully",
+		Data:       user,
+	})
+
 }
 
 func UpdateUser(ctx *gin.Context, userId int, body models.User) (*mongo.UpdateResult, error) {
@@ -92,7 +96,7 @@ func UpdateUser(ctx *gin.Context, userId int, body models.User) (*mongo.UpdateRe
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "Failed to get user",
-			Data:       err.Error(),
+			Data:       nil,
 		})
 		return nil, err
 	}
@@ -111,7 +115,7 @@ func UpdateUser(ctx *gin.Context, userId int, body models.User) (*mongo.UpdateRe
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "Failed to update template",
-			Data:       err.Error(),
+			Data:       nil,
 		})
 		ctx.Abort()
 		return nil, err
@@ -133,26 +137,30 @@ func GenerateRandom() int {
 	return GenerateRandom()
 }
 
-func DeleteUser(ctx *gin.Context, userId int) (*mongo.DeleteResult, error) {
+func DeleteUser(ctx *gin.Context, userId int) {
 	var existingUser models.User
 	err := userCollection.FindOne(context.TODO(), bson.M{"userId": userId}).Decode(&existingUser)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "Failed to get user",
-			Data:       err.Error(),
+			Data:       nil,
 		})
 		ctx.Abort()
-		return nil, err
+		return
 	}
 	resp, err := userCollection.DeleteOne(context.TODO(), bson.M{"userId": userId})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "Failed to delete user",
-			Data:       err.Error(),
+			Data:       nil,
 		})
-		return nil, err
+		return
 	}
-	return resp, nil
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "User deleted successfully",
+		Data:       resp,
+	})
 }

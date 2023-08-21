@@ -7,18 +7,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func CreateUser(ctx *gin.Context, user models.User) (*mongo.InsertOneResult, error) {
-	return repositories.CreateUser(ctx, user)
+func CreateUser(ctx *gin.Context, user models.User) {
+	repositories.CreateUser(ctx, user)
 }
 
-func GetUser(ctx *gin.Context, userId int) (models.User, error) {
-	return repositories.GetUser(ctx, userId)
+func GetUser(ctx *gin.Context, userId int) {
+	repositories.GetUser(ctx, userId)
 }
 
 func UpdateUser(ctx *gin.Context, id int, body models.User) (*mongo.UpdateResult, error) {
 	return repositories.UpdateUser(ctx, id, body)
 }
 
-func DeleteUser(c *gin.Context, userId int) (*mongo.DeleteResult, error) {
-	return repositories.DeleteUser(c, userId)
+func DeleteUser(c *gin.Context, userId int) {
+	repositories.DeleteUser(c, userId)
 }

@@ -27,11 +27,8 @@ func TokenControllers(ctx *gin.Context) {
 		ctx.Abort()
 		return
 	}
-	response, _ := services.CreatTokenService(ctx, user)
-	ctx.JSON(http.StatusOK, gin.H{
-		"statusCode": http.StatusOK,
-		"data":       response,
-	})
+	services.CreatTokenService(ctx, user)
+
 }
 
 func ValidateAccessToken(c *gin.Context) {

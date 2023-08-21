@@ -6,7 +6,7 @@ import (
 	"github.com/seetharamugn/wachat/repositories"
 )
 
-func CreatTokenService(ctx *gin.Context, user models.User) (interface{}, error) {
-	response, err := repositories.CreateToken(ctx, user)
-	return response, err
+func CreatTokenService(ctx *gin.Context, user models.User) {
+	repositories.CreateToken(ctx, user)
+
 }
