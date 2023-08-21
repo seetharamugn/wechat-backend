@@ -22,8 +22,8 @@ func TokenControllers(ctx *gin.Context) {
 		ctx.Abort()
 		return
 	}
-	if user.Username == "" || user.Password == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "user ID is required"})
+	if user.Email == "" || user.Password == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "email and password is required"})
 		ctx.Abort()
 		return
 	}

@@ -36,7 +36,7 @@ func CreateUser(ctx *gin.Context, user models.User) {
 		// Either username or email already exists
 		ctx.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
-			Message:    "already  username or email exists",
+			Message:    "already email exists",
 			Data:       nil,
 		})
 		ctx.Abort()

@@ -21,12 +21,12 @@ var tokenCollection *mongo.Collection = initializers.OpenCollection(initializers
 func CreateToken(ctx *gin.Context, user models.User) {
 	signature := os.Getenv("JWT_SECRET_KEY")
 	var existingUser models.User
-	err := userCollection.FindOne(context.TODO(), bson.M{"$or": []bson.M{{"username": user.Username}}}).Decode(&existingUser)
+	err := userCollection.FindOne(context.TODO(), bson.M{"$or": []bson.M{{"email": user.Email}}}).Decode(&existingUser)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
 			Data:       nil,
-			Message:    "Invalid username or password",
+			Message:    "Invalid email or password",
 		})
 		ctx.Abort()
 		return
