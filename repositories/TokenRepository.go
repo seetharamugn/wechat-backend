@@ -31,7 +31,16 @@ func CreateToken(ctx *gin.Context, user models.User) {
 		ctx.Abort()
 		return
 	}
-	CheckPasswordHash(user.Password, existingUser.Password)
+	flag := CheckPasswordHash(user.Password, existingUser.Password)
+	if !flag {
+		ctx.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Data:       nil,
+			Message:    "Invalid email or password",
+		})
+		ctx.Abort()
+		return
+	}
 	AccessToken := GenerateAccessToken(ctx, existingUser.UserId, time.Now().Add(time.Hour*24*1).Unix(), signature)
 	RefreshToken := GenerateAccessToken(ctx, existingUser.UserId, time.Now().Add(time.Hour*24*30).Unix(), signature)
 	token := models.Token{
