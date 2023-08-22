@@ -19,6 +19,7 @@ func SendBulkMessage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Error parsing CSV file"})
 		return
 	}
+	fmt.Println(file)
 	defer file.Close()
 	reader := csv.NewReader(file)
 	var contacts []string
