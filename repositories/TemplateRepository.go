@@ -81,7 +81,7 @@ func GetTemplates(ctx *gin.Context, name string) (interface{}, error) {
 	return templates, nil
 }
 func GetAllTemplates(ctx *gin.Context) (interface{}, error) {
-	var templates []models.MessageTemplate
+	var templates []Dao.TemplateResponse
 	cursor, err := templateCollection.Find(context.TODO(), bson.M{})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{
@@ -93,7 +93,7 @@ func GetAllTemplates(ctx *gin.Context) (interface{}, error) {
 		return templates, err
 	}
 	for cursor.Next(context.TODO()) {
-		var template models.MessageTemplate
+		var template Dao.TemplateResponse
 		err = cursor.Decode(&template)
 		if err != nil {
 			return nil, err

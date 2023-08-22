@@ -78,14 +78,15 @@ func SendTextMessage(ctx *gin.Context, messageBody models.Body) (interface{}, er
 		return nil, err
 	}
 	message := models.Message{
-		Id:         response.Messages[0].Id,
-		From:       WaAccount.PhoneNumber,
-		To:         messageBody.MessageTo,
-		Type:       "text",
-		Body:       messageBody.MessageBody,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-		ReadStatus: false,
+		Id:            response.Messages[0].Id,
+		From:          WaAccount.PhoneNumber,
+		To:            messageBody.MessageTo,
+		Type:          "text",
+		Body:          messageBody.MessageBody,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+		ReadStatus:    false,
+		MessageStatus: false,
 	}
 	resp, err := messageCollection.InsertOne(context.TODO(), message)
 	if err != nil {
