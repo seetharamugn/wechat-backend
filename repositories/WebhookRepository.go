@@ -26,23 +26,23 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 	}
 }
 func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId string) {
-	fmt.Println(from, to, messageBody, profileName, messageId)
 	var chatId interface{}
-	var replyUser models.ReplyUser
+	var replyUser, chat, users map[string]interface{}
 	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
-	chatId = replyUser.Id
-	fmt.Println(replyUser.UserId, replyUser.Id)
-	if replyUser.UserId == "" {
+	chatId = replyUser["_id"]
+	fmt.Println(replyUser["userId"], replyUser["_id"])
+	if replyUser["userId"] == "" {
 		userId := generateRandom()
 		chatId, _ = ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
 		fmt.Println(chatId)
 	}
-
-	var chat models.Chat
+	fmt.Println(replyUser, chat, users)
 	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
+	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 
-	if chat.CreatedBy != from {
-		Numbers := []string{from, to}
+	fmt.Println(users["_id"])
+	if chat["createdBy"] != from {
+		Numbers := []interface{}{chat["_id"], users["_id"]}
 		user := models.Chat{
 			UserNumber:  Numbers,
 			CreatedBy:   from,
