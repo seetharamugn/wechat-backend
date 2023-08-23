@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/seetharamugn/wachat/Dao"
 	"github.com/seetharamugn/wachat/initializers"
@@ -26,7 +25,7 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 	}
 }
 func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId string) {
-	var chatId, replyId interface{}
+	var chatId interface{}
 	var replyUser models.ReplyUser
 	var chat models.Chat
 	var users models.User
@@ -34,9 +33,8 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	chatId = replyUser.ID
 	if replyUser.UserId == "" {
 		userId := generateRandom()
-		replyId, _ = ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
 	}
-	fmt.Println(replyId)
 	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	if chat.CreatedBy != from {
@@ -54,14 +52,13 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		chatId = chat.ID
 		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": messageId}})
 	}
-	fmt.Println(chatId)
 	message := models.Message{
 		Id:            messageId,
 		From:          from,
 		To:            to,
 		Type:          "text",
 		Body:          messageBody,
-		ChatId:        chat.ID,
+		ChatId:        chatId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		ReadStatus:    false,
