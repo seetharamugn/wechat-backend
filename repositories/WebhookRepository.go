@@ -56,8 +56,8 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	}
 	message := models.Message{
 		Id:            messageId,
-		From:          to,
-		To:            from,
+		From:          from,
+		To:            to,
 		Type:          "text",
 		Body:          messageBody,
 		ChatId:        chatId,
