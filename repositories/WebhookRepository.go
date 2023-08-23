@@ -38,13 +38,12 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		chatId, _ = ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
 		fmt.Println(chatId)
 	}
-
 	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	fmt.Println(replyUser, chat, users)
 	fmt.Println(users.UserId)
 	if chat.CreatedBy != from {
-		Numbers := []interface{}{chat.ID, users.UserId}
+		Numbers := []interface{}{replyUser.ID, users.ID}
 		user := models.Chat{
 			UserNumber:  Numbers,
 			CreatedBy:   from,
