@@ -46,13 +46,13 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 			Status:      "active",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
-			LastMessage: messageId,
+			LastMessage: messageBody,
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": messageId}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": messageBody}})
 	}
 	message := models.Message{
 		Id:            messageId,
