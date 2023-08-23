@@ -26,22 +26,19 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 	}
 }
 func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId string) {
-	var chatId interface{}
+	var chatId, replyId interface{}
 	var replyUser models.ReplyUser
 	var chat models.Chat
 	var users models.User
 	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
 	chatId = replyUser.ID
-	fmt.Println(replyUser.ID, replyUser.UserId)
 	if replyUser.UserId == "" {
 		userId := generateRandom()
-		chatId, _ = ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
-		fmt.Println(chatId)
+		replyId, _ = ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
 	}
+	fmt.Println(replyId)
 	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
-	fmt.Println(replyUser, chat, users)
-	fmt.Println(users.UserId)
 	if chat.CreatedBy != from {
 		Numbers := []interface{}{replyUser.ID, users.ID}
 		user := models.Chat{
@@ -52,17 +49,19 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 			UpdatedAt:   time.Now(),
 			LastMessage: messageId,
 		}
-		chatCollection.InsertOne(context.TODO(), user)
+		chatId, _ = chatCollection.InsertOne(context.TODO(), user)
 	} else {
+		chatId = chat.ID
 		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": messageId}})
 	}
-
+	fmt.Println(chatId)
 	message := models.Message{
 		Id:            messageId,
 		From:          from,
 		To:            to,
 		Type:          "text",
 		Body:          messageBody,
+		ChatId:        chat.ID,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		ReadStatus:    false,
