@@ -6,6 +6,7 @@ import (
 )
 
 func ChatRouter(routes *gin.RouterGroup) {
+	routes.GET("/getAllChats", controllers.GetAllChats)
 	routes.POST("/sendBulkMessage", controllers.SendBulkMessage)
 	routes.POST("/sendMessage", controllers.SendTextMessage)
 	routes.POST("/sendReplyToTextMessage", controllers.SendReplyToTextMessage)

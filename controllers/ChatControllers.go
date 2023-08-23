@@ -11,6 +11,14 @@ import (
 	"net/http"
 )
 
+func GetAllChats(ctx *gin.Context) {
+	resp, _ := services.GetAllChat(ctx)
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "success",
+		Data:       resp,
+	})
+}
 func SendBulkMessage(c *gin.Context) {
 	userId := c.PostForm("userId")
 	templateName := c.PostForm("templateName")
@@ -19,7 +27,6 @@ func SendBulkMessage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Error parsing CSV file"})
 		return
 	}
-	fmt.Println(file)
 	defer file.Close()
 	reader := csv.NewReader(file)
 	var contacts []string

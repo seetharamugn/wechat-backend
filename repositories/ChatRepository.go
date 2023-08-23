@@ -8,6 +8,7 @@ import (
 	"github.com/seetharamugn/wachat/Dao"
 	"github.com/seetharamugn/wachat/initializers"
 	"github.com/seetharamugn/wachat/models"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/net/context"
 	"io"
@@ -20,7 +21,31 @@ import (
 
 var messageCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "message")
 
+var chatCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "chat")
 var waUrl = os.Getenv("WA_URL")
+
+func GetAllChat(ctx *gin.Context) (interface{}, error) {
+	var chats []models.Chat
+	cursor, err := chatCollection.Find(context.TODO(), bson.M{})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, Dao.Response{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Failed to get templates",
+			Data:       err.Error(),
+		})
+		ctx.Abort()
+		return chats, err
+	}
+	for cursor.Next(context.TODO()) {
+		var chat models.Chat
+		err = cursor.Decode(&chat)
+		if err != nil {
+			return nil, err
+		}
+		chats = append(chats, chat)
+	}
+	return chats, nil
+}
 
 func SendBulkMessage(c *gin.Context, userId, templateName string, phoneNumbers []string) (interface{}, error) {
 	WaAccount, err := GetAccessToken(c, userId)

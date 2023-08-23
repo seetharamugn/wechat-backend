@@ -1,10 +1,9 @@
 package controllers
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/seetharamugn/wachat/Dao"
+	"github.com/seetharamugn/wachat/services"
 	"net/http"
 	"os"
 )
@@ -23,18 +22,11 @@ func VerifyWebhook(ctx *gin.Context) {
 }
 
 func HandleIncomingMessage(ctx *gin.Context) {
-	var messageBody Dao.MessageResponse
+	var messageBody Dao.WebhookMessage
 	if err := ctx.ShouldBind(&messageBody); err != nil {
 		ctx.String(http.StatusBadRequest, "Invalid request")
 		return
 	}
+	services.IncomingMessage(ctx, messageBody)
 
-	jsonBytes, err := json.Marshal(messageBody)
-	if err != nil {
-		ctx.String(http.StatusInternalServerError, "Error marshaling JSON")
-		return
-	}
-
-	jsonString := string(jsonBytes)
-	fmt.Println(jsonString)
 }

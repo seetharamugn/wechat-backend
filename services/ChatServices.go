@@ -6,6 +6,10 @@ import (
 	"github.com/seetharamugn/wachat/repositories"
 )
 
+func GetAllChat(c *gin.Context) (interface{}, error) {
+	return repositories.GetAllChat(c)
+}
+
 func SendBulkMessage(c *gin.Context, userId, templateName string, phoneNumbers []string) (interface{}, error) {
 	return repositories.SendBulkMessage(c, userId, templateName, phoneNumbers)
 }
