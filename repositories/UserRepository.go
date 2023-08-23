@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/context"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -20,7 +21,7 @@ func CreateUser(ctx *gin.Context, user models.User) {
 	password, _ := HashPassword(user.Password)
 	userId := GenerateRandom()
 	newUser := models.User{
-		UserId:    userId,
+		UserId:    strconv.Itoa(userId),
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Username:  user.Username,

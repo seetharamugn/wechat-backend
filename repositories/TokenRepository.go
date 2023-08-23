@@ -82,7 +82,7 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func GenerateAccessToken(ctx *gin.Context, userId int, unix int64, signature string) string {
+func GenerateAccessToken(ctx *gin.Context, userId string, unix int64, signature string) string {
 	AccessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    userId,
 		"expiredIn": unix,
