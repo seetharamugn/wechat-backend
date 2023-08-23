@@ -37,6 +37,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	}
 	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
+	chatId = chat.ID
 	if chat.CreatedBy != from {
 		Numbers := []interface{}{replyUser.ID, users.ID}
 		user := models.Chat{
@@ -49,7 +50,6 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		}
 		chatId, _ = chatCollection.InsertOne(context.TODO(), user)
 	} else {
-		chatId = chat.ID
 		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": messageId}})
 	}
 	message := models.Message{
