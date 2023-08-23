@@ -6,7 +6,7 @@ import (
 )
 
 type Chat struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	UserNumber  []interface{}      `bson:"userNumber" json:"userNumber"`
 	CreatedBy   string             `bson:"createdBy" json:"createdBy"`
 	Status      string             `bson:"status" json:"status"`
