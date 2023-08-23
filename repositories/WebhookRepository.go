@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/seetharamugn/wachat/Dao"
 	"github.com/seetharamugn/wachat/initializers"
@@ -24,7 +25,6 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 			messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name,
 			messageBody.Entry[0].Changes[0].Value.Messages[0].ID)
 	}
-
 }
 func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId string) {
 	message := models.Message{
@@ -48,6 +48,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	}
 	var replyUser models.ReplyUser
 	ReplyUserCollection.FindOne(context.TODO(), models.ReplyUser{PhoneNumber: from}).Decode(&replyUser)
+	fmt.Println(replyUser.UserId)
 	if replyUser.UserId == "" {
 		userId := generateRandom()
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
