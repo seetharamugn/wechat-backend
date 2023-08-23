@@ -47,7 +47,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		return
 	}
 	var replyUser models.ReplyUser
-	ReplyUserCollection.FindOne(context.TODO(), models.ReplyUser{PhoneNumber: from}).Decode(&replyUser)
+	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
 	fmt.Println(replyUser.UserId)
 	if replyUser.UserId == "" {
 		userId := generateRandom()
