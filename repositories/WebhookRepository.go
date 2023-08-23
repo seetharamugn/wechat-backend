@@ -38,7 +38,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		return
 	}
 	chatId = replyUser.Id
-	fmt.Println(replyUser.,replyUser.Id)
+	fmt.Println(replyUser.UserId, replyUser.Id)
 	if replyUser.UserId == "" {
 		userId := generateRandom()
 		chatId, err = ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
