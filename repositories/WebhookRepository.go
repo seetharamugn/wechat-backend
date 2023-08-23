@@ -27,6 +27,7 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 	}
 }
 func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId string) {
+	fmt.Println(from, to, messageBody, profileName, messageId)
 	var chatId interface{}
 	var replyUser models.ReplyUser
 	err := ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
