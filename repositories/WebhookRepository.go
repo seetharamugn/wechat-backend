@@ -10,7 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/net/context"
 	"math/rand"
-	"net/http"
 	"strconv"
 	"time"
 )
@@ -30,39 +29,18 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	fmt.Println(from, to, messageBody, profileName, messageId)
 	var chatId interface{}
 	var replyUser models.ReplyUser
-	err := ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": "Failed to fetch reply user",
-		})
-		fmt.Println(err)
-		ctx.Abort()
-		return
-	}
+	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
 	chatId = replyUser.Id
 	fmt.Println(replyUser.UserId, replyUser.Id)
 	if replyUser.UserId == "" {
 		userId := generateRandom()
-		chatId, err = ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+		chatId, _ = ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
 		fmt.Println(chatId)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"Error": "Failed to create reply user",
-			})
-			ctx.Abort()
-			return
-		}
 	}
 
 	var chat models.Chat
-	err = chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": "Failed to fetch chat",
-		})
-		ctx.Abort()
-		return
-	}
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
+
 	if chat.CreatedBy != from {
 		Numbers := []string{from, to}
 		user := models.Chat{
@@ -73,21 +51,9 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 			UpdatedAt:   time.Now(),
 			LastMessage: messageId,
 		}
-		_, err = chatCollection.InsertOne(context.TODO(), user)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"Error": "Failed to insert chat",
-				"err":   err,
-			})
-		}
+		chatCollection.InsertOne(context.TODO(), user)
 	} else {
-		_, err = chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": messageId}})
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"Error": "Failed to update chat",
-				"err":   err,
-			})
-		}
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": messageId}})
 	}
 
 	message := models.Message{
@@ -101,14 +67,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		ReadStatus:    false,
 		MessageStatus: false,
 	}
-	_, err = messageCollection.InsertOne(context.TODO(), message)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": "Failed to create template",
-		})
-		ctx.Abort()
-		return
-	}
+	messageCollection.InsertOne(context.TODO(), message)
 }
 
 func generateRandom() string {
