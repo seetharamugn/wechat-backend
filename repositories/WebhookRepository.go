@@ -27,47 +27,85 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 	}
 }
 func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId string) {
+	var chatId interface{}
+	var replyUser models.ReplyUser
+	err := ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"Error": "Failed to fetch reply user",
+		})
+		ctx.Abort()
+		return
+	}
+	chatId = replyUser.Id
+	fmt.Println(replyUser.UserId)
+	if replyUser.UserId == "" {
+		userId := generateRandom()
+		chatId, err = ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"Error": "Failed to create reply user",
+			})
+			ctx.Abort()
+			return
+		}
+	}
+
+	var chat models.Chat
+	err = chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"Error": "Failed to fetch chat",
+		})
+		ctx.Abort()
+		return
+	}
+	if chat.CreatedBy != from {
+		Numbers := []string{from, to}
+		user := models.Chat{
+			UserNumber:  Numbers,
+			CreatedBy:   from,
+			Status:      "active",
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			LastMessage: messageId,
+		}
+		_, err = chatCollection.InsertOne(context.TODO(), user)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"Error": "Failed to insert chat",
+				"err":   err,
+			})
+		}
+	} else {
+		_, err = chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": messageId}})
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"Error": "Failed to update chat",
+				"err":   err,
+			})
+		}
+	}
+
 	message := models.Message{
 		Id:            messageId,
 		From:          from,
 		To:            to,
 		Type:          "text",
 		Body:          messageBody,
+		ChatId:        chatId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		ReadStatus:    false,
 		MessageStatus: false,
 	}
-	_, err := messageCollection.InsertOne(context.TODO(), message)
+	_, err = messageCollection.InsertOne(context.TODO(), message)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"Error": "Failed to create template",
 		})
 		ctx.Abort()
 		return
-	}
-	var replyUser models.ReplyUser
-	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
-	fmt.Println(replyUser.UserId)
-	if replyUser.UserId == "" {
-		userId := generateRandom()
-		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
-	}
-	Numbers := []string{from, to}
-	user := models.Chat{
-		UserNumber:  Numbers,
-		CreatedBy:   to,
-		Status:      "active",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-		LastMessage: messageId,
-	}
-	_, err = chatCollection.InsertOne(context.TODO(), user)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": "Failed to insert chat",
-			"err":   err,
-		})
 	}
 }
 
