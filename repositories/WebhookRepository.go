@@ -38,10 +38,11 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		return
 	}
 	chatId = replyUser.Id
-	fmt.Println(replyUser.UserId)
+	fmt.Println(replyUser.,replyUser.Id)
 	if replyUser.UserId == "" {
 		userId := generateRandom()
 		chatId, err = ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+		fmt.Println(chatId)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"Error": "Failed to create reply user",
@@ -93,7 +94,6 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		To:            to,
 		Type:          "text",
 		Body:          messageBody,
-		ChatId:        chatId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		ReadStatus:    false,
