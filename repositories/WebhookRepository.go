@@ -35,6 +35,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"Error": "Failed to fetch reply user",
 		})
+		fmt.Println(err)
 		ctx.Abort()
 		return
 	}
