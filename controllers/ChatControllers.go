@@ -57,7 +57,7 @@ func SendBulkMessage(c *gin.Context) {
 }
 
 func SendTextMessage(c *gin.Context) {
-	var requestBody models.Body
+	var requestBody models.MessageBody
 
 	if err := c.BindJSON(&requestBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -72,7 +72,7 @@ func SendTextMessage(c *gin.Context) {
 }
 
 func SendReplyToTextMessage(c *gin.Context) {
-	var requestBody models.Body
+	var requestBody models.MessageBody
 	if err := c.BindJSON(&requestBody); err != nil {
 		c.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
@@ -88,9 +88,8 @@ func SendReplyToTextMessage(c *gin.Context) {
 	})
 }
 
-func SendImageMessage(c *gin.Context) {
-
-	var requestBody models.Body
+func SendReplyByReaction(c *gin.Context) {
+	var requestBody models.MessageBody
 	if err := c.BindJSON(&requestBody); err != nil {
 		c.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
@@ -98,45 +97,73 @@ func SendImageMessage(c *gin.Context) {
 			Data:       nil})
 		return
 	}
-	response, _ := services.SendImageMessage(c, requestBody)
-	c.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "Message sent successfully",
-		Data:       response,
-	})
+	response, err := services.SendReplyByReaction(c, requestBody)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Data:       nil})
+	} else {
+		c.JSON(http.StatusOK, Dao.Response{
+			StatusCode: http.StatusOK,
+			Message:    "Message sent successfully",
+			Data:       response,
+		})
+	}
+}
+func SendImageMessage(c *gin.Context) {
+	userId := c.PostForm("userId")
+	messageTo := c.PostForm("messageTo")
+	file, header, err := c.Request.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Data:       nil})
+	}
+	filename := header.Filename
+	contentType := header.Header.Get("Content-Type")
+
+	services.SendImageMessage(c, userId, messageTo, filename, contentType, file)
 }
 
 func SendVideoMessage(c *gin.Context) {
-	var requestBody models.Body
-	if err := c.BindJSON(&requestBody); err != nil {
+	userId := c.PostForm("userId")
+	messageTo := c.PostForm("messageTo")
+	file, header, err := c.Request.FormFile("video")
+	if err != nil {
 		c.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
 			Message:    err.Error(),
 			Data:       nil})
-		return
 	}
-	response, _ := services.SendVideoMessage(c, requestBody)
-	c.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "Message sent successfully",
-		Data:       response,
-	})
+	filename := header.Filename
+	contentType := header.Header.Get("Content-Type")
+
+	services.SendVideoMessage(c, userId, messageTo, filename, contentType, file)
 }
 
 func SendPdfMessage(c *gin.Context) {
-	var requestBody models.Body
-	if err := c.BindJSON(&requestBody); err != nil {
+	userId := c.PostForm("userId")
+	messageTo := c.PostForm("messageTo")
+	file, header, err := c.Request.FormFile("document")
+	if err != nil {
 		c.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
 			Message:    err.Error(),
 			Data:       nil})
-		c.Abort()
+	}
+	filename := header.Filename
+	contentType := header.Header.Get("Content-Type")
+
+	services.SendPdfMessage(c, userId, messageTo, filename, contentType, file)
+}
+
+func SendLocationMessage(c *gin.Context) {
+	var requestBody models.MessageBody
+	if err := c.BindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	response, _ := services.SendPdfMessage(c, requestBody)
-	c.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "Message sent successfully",
-		Data:       response,
-	})
+	services.SendLocationMessage(c, requestBody)
 }

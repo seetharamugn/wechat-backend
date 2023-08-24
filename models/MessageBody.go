@@ -1,12 +1,5 @@
 package models
 
-type Body struct {
-	UserId      int    `json:"userId"`
-	MessageTo   string `json:"messageTo"`
-	MessageBody string `json:"messageBody"`
-	MessageId   string `json:"messageId"`
-}
-
 // TemplateMessage Body
 type TemplateMessage struct {
 	MessagingProduct string   `json:"messaging_product"`
@@ -105,4 +98,17 @@ type Context struct {
 type ReplyText struct {
 	PreviewUrl bool   `json:"preview_url"`
 	Body       string `json:"body"`
+}
+
+// ReplyReaction Body
+type ReplyReaction struct {
+	MessagingProduct string   `json:"messaging_product"`
+	RecipientType    string   `json:"recipient_type"`
+	To               string   `json:"to"`
+	Type             string   `json:"type"`
+	Reaction         Reaction `json:"reaction"`
+}
+type Reaction struct {
+	MessageId string `json:"message_id"`
+	Emoji     string `json:"emoji"`
 }

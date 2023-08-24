@@ -18,3 +18,14 @@ type Message struct {
 	ParentId      string      `bson:"parent_message_id" json:"parent_message_id"`
 	MessageStatus bool        `bson:"message_status" json:"message_status"`
 }
+
+type MessageBody struct {
+	UserId          int     `json:"userId"`
+	MessageTo       string  `json:"messageTo"`
+	MessageBody     string  `json:"messageBody"`
+	MessageId       string  `json:"messageId"`
+	Latitude        float64 `json:"latitude"`
+	Longitude       float64 `json:"longitude"`
+	LocationAddress string  `json:"LocationAddress"`
+	LocationName    string  `json:"locationName"`
+}
