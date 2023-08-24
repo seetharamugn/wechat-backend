@@ -12,7 +12,14 @@ import (
 )
 
 func GetAllChats(ctx *gin.Context) {
-	resp, _ := services.GetAllChat(ctx)
+	resp, err := services.GetAllChat(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Data:       nil,
+		})
+	}
 	ctx.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
 		Message:    "success",
@@ -63,7 +70,13 @@ func SendTextMessage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	response, _ := services.SendTextMessage(c, requestBody)
+	response, err := services.SendTextMessage(c, requestBody)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Data:       nil})
+	}
 	c.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
 		Message:    "Message sent successfully",

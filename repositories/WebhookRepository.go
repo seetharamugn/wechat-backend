@@ -54,12 +54,15 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	} else {
 		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": messageBody}})
 	}
+
 	message := models.Message{
-		Id:            messageId,
-		From:          from,
-		To:            to,
-		Type:          "text",
-		Body:          messageBody,
+		Id:   messageId,
+		From: from,
+		To:   to,
+		Type: "text",
+		Body: models.Body{
+			Text: messageBody,
+		},
 		ChatId:        chatId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),

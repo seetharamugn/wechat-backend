@@ -11,6 +11,7 @@ import (
 	"github.com/seetharamugn/wachat/initializers"
 	"github.com/seetharamugn/wachat/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/net/context"
 	"io"
@@ -27,6 +28,7 @@ var chatCollection *mongo.Collection = initializers.OpenCollection(initializers.
 var waUrl = os.Getenv("WA_URL")
 var MyBucket = os.Getenv("BUCKET_NAME")
 var CloudfrontUrl = os.Getenv("CLOUDFRONT_URL")
+var Chat models.Chat
 
 func GetAllChat(ctx *gin.Context) (interface{}, error) {
 	var chats []models.Chat
@@ -106,26 +108,12 @@ func SendTextMessage(ctx *gin.Context, messageBody models.MessageBody) (interfac
 	if err != nil {
 		return nil, err
 	}
-	message := models.Message{
-		Id:            response.Messages[0].Id,
-		From:          WaAccount.PhoneNumber,
-		To:            messageBody.MessageTo,
-		Type:          "text",
-		Body:          messageBody.MessageBody,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		ReadStatus:    false,
-		MessageStatus: false,
-	}
-	resp, err := messageCollection.InsertOne(context.TODO(), message)
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}, bson.M{"$set": bson.M{"lastMessage": messageBody.MessageBody}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageBody.MessageTo, messageBody.MessageBody, "", "", "text")
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": "Failed to create template",
-		})
-		ctx.Abort()
 		return nil, err
 	}
-
 	return resp, nil
 }
 
@@ -155,23 +143,11 @@ func SendReplyToTextMessage(ctx *gin.Context, messageBody models.MessageBody) (i
 	if err != nil {
 		return nil, err
 	}
-	message := models.Message{
-		Id:         response.Messages[0].Id,
-		From:       WaAccount.PhoneNumber,
-		To:         messageBody.MessageTo,
-		Type:       "text",
-		Body:       messageBody.MessageBody,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-		ReadStatus: false,
-		ParentId:   messageBody.MessageId,
-	}
-	resp, err := messageCollection.InsertOne(context.TODO(), message)
+
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}, bson.M{"$set": bson.M{"lastMessage": messageBody.MessageBody}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageBody.MessageTo, messageBody.MessageBody, "", messageBody.MessageId, "text")
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": "Failed to create template",
-		})
-		ctx.Abort()
 		return nil, err
 	}
 	return resp, nil
@@ -201,7 +177,14 @@ func SendReplyByReaction(ctx *gin.Context, messageBody models.MessageBody) (inte
 	if err != nil {
 		return nil, err
 	}
-	return response, nil
+
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}, bson.M{"$set": bson.M{"lastMessage": messageBody.MessageBody}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageBody.MessageTo, messageBody.MessageBody, "", messageBody.MessageId, "reaction")
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 func SendImageMessage(ctx *gin.Context, userId, messageTo, filename, contentType string, file multipart.File) {
@@ -246,22 +229,11 @@ func SendImageMessage(ctx *gin.Context, userId, messageTo, filename, contentType
 		ctx.Abort()
 		return
 	}
-	message := models.Message{
-		Id:         response.Messages[0].Id,
-		From:       WaAccount.PhoneNumber,
-		To:         messageTo,
-		Type:       "image",
-		Body:       link,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-		ReadStatus: false,
-	}
-	resp, err := messageCollection.InsertOne(context.TODO(), message)
+
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, "", link, "", "image")
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": "Failed to create template",
-		})
-		ctx.Abort()
 		return
 	}
 	ctx.JSON(http.StatusOK, Dao.Response{
@@ -298,10 +270,17 @@ func SendVideoMessage(ctx *gin.Context, userId, messageTo, filename, contentType
 	if err != nil {
 		return
 	}
+
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, "", link, "", "video")
+	if err != nil {
+		return
+	}
 	ctx.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
 		Message:    "Message sent successfully",
-		Data:       response,
+		Data:       resp,
 	})
 }
 
@@ -331,10 +310,17 @@ func SendPdfMessage(ctx *gin.Context, userId, messageTo, filename, contentType s
 	if err != nil {
 		return
 	}
+
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, "", link, "", "document")
+	if err != nil {
+		return
+	}
 	ctx.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
 		Message:    "Message sent successfully",
-		Data:       response,
+		Data:       resp,
 	})
 }
 
@@ -428,4 +414,58 @@ func UploadToS3(ctx *gin.Context, file multipart.File, filename string, contentT
 		"filepath": filepath,
 	})
 	return filepath, nil
+}
+
+func InsertMessageIntoDB(ctx *gin.Context, chatId primitive.ObjectID, messageId, phoneNumber, messageTo, messageBody, link, parentMessageId, messageType string) (*mongo.InsertOneResult, error) {
+	Body := models.Body{}
+	if messageType == "text" {
+		Body = models.Body{
+			Text: messageBody,
+		}
+	} else if messageType == "image" {
+		Body = models.Body{
+			Text:     messageBody,
+			Url:      link,
+			MimeType: "image/jpeg",
+		}
+	} else if messageType == "video" {
+		Body = models.Body{
+			Text:     messageBody,
+			Url:      link,
+			MimeType: "video/mp4",
+		}
+	} else if messageType == "document" {
+		Body = models.Body{
+			Text:     messageBody,
+			Url:      link,
+			MimeType: "application/pdf",
+		}
+	} else if messageType == "reaction" {
+		Body = models.Body{
+			Text: messageBody,
+		}
+	}
+	message := models.Message{
+		Id:            messageId,
+		From:          phoneNumber,
+		To:            messageTo,
+		Type:          messageType,
+		Body:          Body,
+		ChatId:        chatId,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+		ReadStatus:    false,
+		MessageStatus: false,
+		ParentId:      parentMessageId,
+	}
+	resp, err := messageCollection.InsertOne(context.TODO(), message)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"Error": "Failed to create template",
+		})
+		ctx.Abort()
+		return nil, err
+	}
+	return resp, nil
+
 }
