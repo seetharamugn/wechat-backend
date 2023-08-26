@@ -19,3 +19,12 @@ type User struct {
 	UpdatedAt   time.Time          `bson:"updatedAt" json:"updatedAt"`
 	DeletedAt   time.Time          `bson:"deletedAt" json:"deletedAt"`
 }
+
+type UserDetails struct {
+	FirstName   string    `bson:"firstName" json:"firstName"`
+	LastName    string    `bson:"lastName" json:"lastName"`
+	Username    string    `bson:"userName" json:"userName"`
+	Email       string    `bson:"email" json:"email"`
+	PhoneNumber string    `bson:"phoneNumber" json:"phoneNumber"`
+	UpdatedAt   time.Time `bson:"updatedAt" json:"updatedAt"`
+}

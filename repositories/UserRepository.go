@@ -73,7 +73,7 @@ func UpdateUser(ctx *gin.Context, userId string, body models.User) (*mongo.Updat
 		})
 		return nil, err
 	}
-	updateUser := models.User{
+	updateUser := models.UserDetails{
 		FirstName:   body.FirstName,
 		LastName:    body.LastName,
 		Username:    body.Username,
