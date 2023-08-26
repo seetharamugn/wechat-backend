@@ -73,17 +73,18 @@ func UpdateUser(ctx *gin.Context, userId string, body models.User) (*mongo.Updat
 		})
 		return nil, err
 	}
-	updateUser := models.User{
-		FirstName:  body.FirstName,
-		LastName:   body.LastName,
-		Username:   body.Username,
-		Email:      body.Email,
-		PhoneNo:    body.PhoneNo,
-		UserActive: body.UserActive,
-		UpdatedAt:  time.Now(),
+	updateUser := models.UserDetails{
+		FirstName: body.FirstName,
+		LastName:  body.LastName,
+		Username:  body.Username,
+		Email:     body.Email,
+		PhoneNo:   body.PhoneNo,
+		UpdatedAt: time.Now(),
 	}
 
-	resp, err := userCollection.ReplaceOne(context.TODO(), bson.M{"userId": userId}, updateUser)
+	filter := bson.D{{"userId", userId}}
+	update := bson.D{{"$set", updateUser}}
+	result, err := userCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, Dao.Response{
 			StatusCode: http.StatusInternalServerError,
@@ -93,7 +94,7 @@ func UpdateUser(ctx *gin.Context, userId string, body models.User) (*mongo.Updat
 		ctx.Abort()
 		return nil, err
 	}
-	return resp, err
+	return result, err
 }
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
