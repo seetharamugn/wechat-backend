@@ -32,21 +32,12 @@ func CreateUser(ctx *gin.Context, user models.User) {
 	}
 	// Check if username or email already exist
 	var existingUser models.User
-	err := userCollection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
-	if err == nil {
-		// Either username or email already exists
+	userCollection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
+
+	if existingUser.UserId != "" {
 		ctx.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
-			Message:    "already email exists",
-			Data:       nil,
-		})
-		ctx.Abort()
-		return
-	} else if err != mongo.ErrNoDocuments {
-		// An error occurred during the query
-		ctx.JSON(http.StatusInternalServerError, Dao.Response{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Failed to create user",
+			Message:    "email Already used ",
 			Data:       nil,
 		})
 		ctx.Abort()

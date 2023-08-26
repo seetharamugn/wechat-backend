@@ -29,6 +29,13 @@ type Text struct {
 	Body       string `json:"body"`
 }
 
+// preview Url
+type PreviewUrl struct {
+	MessagingProduct string `json:"messaging_product"`
+	To               string `json:"to"`
+	Text             Text   `json:"text"`
+}
+
 // ImageMessage Body
 type ImageMessage struct {
 	MessagingProduct string `json:"messaging_product"`
@@ -85,19 +92,15 @@ type Document struct {
 
 // TextReply Body
 type TextReply struct {
-	MessagingProduct string    `json:"messaging_product"`
-	RecipientType    string    `json:"recipient_type"`
-	To               string    `json:"to"`
-	Context          Context   `json:"context"`
-	Type             string    `json:"type"`
-	Text             ReplyText `json:"text"`
+	MessagingProduct string  `json:"messaging_product"`
+	RecipientType    string  `json:"recipient_type"`
+	To               string  `json:"to"`
+	Context          Context `json:"context"`
+	Type             string  `json:"type"`
+	Text             Text    `json:"text"`
 }
 type Context struct {
 	MessageId string `json:"message_id"`
-}
-type ReplyText struct {
-	PreviewUrl bool   `json:"preview_url"`
-	Body       string `json:"body"`
 }
 
 // ReplyReaction Body
@@ -111,4 +114,32 @@ type ReplyReaction struct {
 type Reaction struct {
 	MessageId string `json:"message_id"`
 	Emoji     string `json:"emoji"`
+}
+
+// ImageReply Body
+type ImageReply struct {
+	MessagingProduct string  `json:"messaging_product"`
+	RecipientType    string  `json:"recipient_type"`
+	To               string  `json:"to"`
+	Context          Context `json:"context"`
+	Type             string  `json:"type"`
+	Image            Image   `json:"image"`
+}
+
+// VideoReply Body
+type VideoReply struct {
+	MessagingProduct string  `json:"messaging_product"`
+	RecipientType    string  `json:"recipient_type"`
+	To               string  `json:"to"`
+	Context          Context `json:"context"`
+	Type             string  `json:"type"`
+	Video            Video   `json:"video"`
+}
+type DocumentReply struct {
+	MessagingProduct string   `json:"messaging_product"`
+	RecipientType    string   `json:"recipient_type"`
+	To               string   `json:"to"`
+	Context          Context  `json:"context"`
+	Type             string   `json:"type"`
+	Document         Document `json:"document"`
 }

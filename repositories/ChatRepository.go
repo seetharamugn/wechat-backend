@@ -117,7 +117,37 @@ func SendTextMessage(ctx *gin.Context, messageBody models.MessageBody) (interfac
 	return resp, nil
 }
 
-func SendReplyToTextMessage(ctx *gin.Context, messageBody models.MessageBody) (interface{}, error) {
+func SendTextMessageWithPreviewURL(ctx *gin.Context, messageBody models.MessageBody) (interface{}, error) {
+	WaAccount, err := GetAccessToken(ctx, strconv.Itoa(messageBody.UserId))
+	if err != nil {
+		return nil, err
+	}
+	payload := models.PreviewUrl{
+		MessagingProduct: "whatsapp",
+		To:               messageBody.MessageTo,
+		Text: models.Text{
+			PreviewUrl: true,
+			Body:       messageBody.MessageBody,
+		},
+	}
+	jsonBody, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	response, err := SendMessage(jsonBody, WaAccount.Token, WaAccount.PhoneNumberId, WaAccount.ApiVersion)
+	if err != nil {
+		return nil, err
+	}
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}, bson.M{"$set": bson.M{"lastMessage": messageBody.MessageBody}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageBody.MessageTo, messageBody.MessageBody, "", "", "text")
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func SendReplyByTextMessage(ctx *gin.Context, messageBody models.MessageBody) (interface{}, error) {
 	WaAccount, err := GetAccessToken(ctx, strconv.Itoa(messageBody.UserId))
 	if err != nil {
 		return nil, err
@@ -130,7 +160,7 @@ func SendReplyToTextMessage(ctx *gin.Context, messageBody models.MessageBody) (i
 			MessageId: messageBody.MessageId,
 		},
 		Type: "text",
-		Text: models.ReplyText{
+		Text: models.Text{
 			PreviewUrl: false,
 			Body:       messageBody.MessageBody,
 		},
@@ -243,7 +273,50 @@ func SendImageMessage(ctx *gin.Context, userId, messageTo, filename, contentType
 	})
 }
 
-func SendVideoMessage(ctx *gin.Context, userId, messageTo, filename, contentType string, file multipart.File) {
+func SendReplyByImageMessage(ctx *gin.Context, userId, messageTo, messageId, filename, contentType string, file multipart.File) (interface{}, error) {
+	WaAccount, err := GetAccessToken(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+	link, err := UploadToS3(ctx, file, filename, contentType)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"Error": err.Error(),
+		})
+		ctx.Abort()
+		return nil, err
+	}
+	payload := models.ImageReply{
+		MessagingProduct: "whatsapp",
+		RecipientType:    "individual",
+		To:               messageTo,
+		Context: models.Context{
+			MessageId: messageId,
+		},
+		Type: "image",
+		Image: models.Image{
+			Link: link,
+		},
+	}
+	jsonBody, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	response, err := SendMessage(jsonBody, WaAccount.Token, WaAccount.PhoneNumberId, WaAccount.ApiVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, "", link, messageId, "image")
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func SendVideoMessage(ctx *gin.Context, userId, messageTo, caption, filename, contentType string, file multipart.File) {
 	WaAccount, err := GetAccessToken(ctx, userId)
 	if err != nil {
 		return
@@ -258,7 +331,8 @@ func SendVideoMessage(ctx *gin.Context, userId, messageTo, filename, contentType
 		To:               messageTo,
 		Type:             "video",
 		Video: models.Video{
-			Link: link,
+			Link:    link,
+			Caption: caption,
 		},
 	}
 	fmt.Println(payload)
@@ -273,7 +347,7 @@ func SendVideoMessage(ctx *gin.Context, userId, messageTo, filename, contentType
 
 	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
 	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
-	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, "", link, "", "video")
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, caption, link, "", "video")
 	if err != nil {
 		return
 	}
@@ -282,6 +356,50 @@ func SendVideoMessage(ctx *gin.Context, userId, messageTo, filename, contentType
 		Message:    "Message sent successfully",
 		Data:       resp,
 	})
+}
+
+func SendReplyByVideo(ctx *gin.Context, userId, messageTo, messageId, caption, filename, contentType string, file multipart.File) (interface{}, error) {
+	WaAccount, err := GetAccessToken(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+	link, err := UploadToS3(ctx, file, filename, contentType)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"Error": err.Error(),
+		})
+		ctx.Abort()
+		return nil, err
+	}
+	payload := models.VideoReply{
+		MessagingProduct: "whatsapp",
+		RecipientType:    "individual",
+		To:               messageTo,
+		Context: models.Context{
+			MessageId: messageId,
+		},
+		Type: "video",
+		Video: models.Video{
+			Link:    link,
+			Caption: caption,
+		},
+	}
+	jsonBody, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	response, err := SendMessage(jsonBody, WaAccount.Token, WaAccount.PhoneNumberId, WaAccount.ApiVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, caption, link, messageId, "video")
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 func SendPdfMessage(ctx *gin.Context, userId, messageTo, filename, contentType string, file multipart.File) {
@@ -324,10 +442,53 @@ func SendPdfMessage(ctx *gin.Context, userId, messageTo, filename, contentType s
 	})
 }
 
-func SendLocationMessage(ctx *gin.Context, messageBody models.MessageBody) {
+func SendReplyByPdfMessage(ctx *gin.Context, userId, messageTo, messageId, caption, filename, contentType string, file multipart.File) (interface{}, error) {
+	WaAccount, err := GetAccessToken(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+	link, err := UploadToS3(ctx, file, filename, contentType)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"Error": err.Error(),
+		})
+		ctx.Abort()
+		return nil, err
+	}
+	payload := models.DocumentReply{
+		MessagingProduct: "whatsapp",
+		RecipientType:    "individual",
+		To:               messageTo,
+		Context: models.Context{
+			MessageId: messageId,
+		},
+		Type: "document",
+		Document: models.Document{
+			Link:    link,
+			Caption: caption,
+		},
+	}
+	jsonBody, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	response, err := SendMessage(jsonBody, WaAccount.Token, WaAccount.PhoneNumberId, WaAccount.ApiVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, caption, link, messageId, "document")
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+func SendLocationMessage(ctx *gin.Context, messageBody models.MessageBody) (interface{}, error) {
 	WaAccount, err := GetAccessToken(ctx, strconv.Itoa(messageBody.UserId))
 	if err != nil {
-		return
+		return nil, err
 	}
 	payload := models.LocationMessage{
 		MessagingProduct: "whatsapp",
@@ -343,17 +504,13 @@ func SendLocationMessage(ctx *gin.Context, messageBody models.MessageBody) {
 	}
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
-		return
+		return nil, err
 	}
 	response, err := SendMessage(jsonBody, WaAccount.Token, WaAccount.PhoneNumberId, WaAccount.ApiVersion)
 	if err != nil {
-		return
+		return nil, err
 	}
-	ctx.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "Message sent successfully",
-		Data:       response,
-	})
+	return response, err
 }
 
 func SendMessage(payload []byte, token string, phoneNumberId int, apiVersion string) (Dao.ResponseMessage, error) {
