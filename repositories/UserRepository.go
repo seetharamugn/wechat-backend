@@ -73,13 +73,13 @@ func UpdateUser(ctx *gin.Context, userId string, body models.User) (*mongo.Updat
 		})
 		return nil, err
 	}
-	updateUser := models.UserDetails{
-		FirstName: body.FirstName,
-		LastName:  body.LastName,
-		Username:  body.Username,
-		Email:     body.Email,
-		PhoneNo:   body.PhoneNo,
-		UpdatedAt: time.Now(),
+	updateUser := models.User{
+		FirstName:   body.FirstName,
+		LastName:    body.LastName,
+		Username:    body.Username,
+		Email:       body.Email,
+		PhoneNumber: body.PhoneNumber,
+		UpdatedAt:   time.Now(),
 	}
 
 	filter := bson.D{{"userId", userId}}
