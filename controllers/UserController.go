@@ -31,31 +31,14 @@ func CreateUser(c *gin.Context) {
 	services.CreateUser(c, user)
 }
 
-func GetUser(c *gin.Context) {
-	userId := c.Query("userId")
-	newUserId, _ := strconv.Atoi(userId)
-	if userId == "" {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    "Required UserId",
-			Data:       nil,
-		})
-		c.Abort()
-		return
-	}
-	services.GetUser(c, newUserId)
-
-}
-
 func Update(c *gin.Context) {
 	userId := c.Query("userId")
-	id, _ := strconv.Atoi(userId)
 	var body models.User
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	result, err := services.UpdateUser(c, id, body)
+	result, err := services.UpdateUser(c, userId, body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Dao.Response{
 			StatusCode: http.StatusInternalServerError,
@@ -75,4 +58,29 @@ func Delete(c *gin.Context) {
 	userId := c.Query("userId")
 	loginUserId, _ := strconv.Atoi(userId)
 	services.DeleteUser(c, loginUserId)
+}
+
+func VerifyEmail(c *gin.Context) {
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	services.VerifyEmail(c, user.Email)
+
+}
+
+func ResetPassword(c *gin.Context) {
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	services.ResetPassword(c, user.Email, user.Password)
+
+}
+func GetUserDetails(c *gin.Context) {
+	userId := c.Query("userId")
+	services.GetUserDetails(c, userId)
+
 }

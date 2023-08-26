@@ -12,7 +12,8 @@ import (
 )
 
 func GetAllChats(ctx *gin.Context) {
-	resp, err := services.GetAllChat(ctx)
+	userId := ctx.Query("userId")
+	resp, err := services.GetAllChat(ctx, userId)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,

@@ -7,8 +7,8 @@ import (
 	"mime/multipart"
 )
 
-func GetAllChat(c *gin.Context) (interface{}, error) {
-	return repositories.GetAllChat(c)
+func GetAllChat(c *gin.Context, userId string) (interface{}, error) {
+	return repositories.GetAllChat(c, userId)
 }
 
 func SendBulkMessage(c *gin.Context, userId, templateName string, phoneNumbers []string) (interface{}, error) {

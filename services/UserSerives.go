@@ -11,14 +11,23 @@ func CreateUser(ctx *gin.Context, user models.User) {
 	repositories.CreateUser(ctx, user)
 }
 
-func GetUser(ctx *gin.Context, userId int) {
-	repositories.GetUser(ctx, userId)
-}
-
-func UpdateUser(ctx *gin.Context, id int, body models.User) (*mongo.UpdateResult, error) {
-	return repositories.UpdateUser(ctx, id, body)
+func UpdateUser(ctx *gin.Context, userId string, body models.User) (*mongo.UpdateResult, error) {
+	return repositories.UpdateUser(ctx, userId, body)
 }
 
 func DeleteUser(c *gin.Context, userId int) {
 	repositories.DeleteUser(c, userId)
+}
+
+func VerifyEmail(c *gin.Context, email string) {
+	repositories.VerifyEmail(c, email)
+}
+
+func ResetPassword(c *gin.Context, email, password string) {
+	repositories.ResetPassword(c, email, password)
+}
+
+func GetUserDetails(c *gin.Context, userId string) {
+	repositories.GetUserDetails(c, userId)
+
 }

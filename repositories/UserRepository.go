@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/seetharamugn/wachat/Dao"
 	"github.com/seetharamugn/wachat/initializers"
@@ -61,27 +62,7 @@ func CreateUser(ctx *gin.Context, user models.User) {
 	})
 }
 
-func GetUser(ctx *gin.Context, userId int) {
-	var user models.User
-	err := userCollection.FindOne(context.TODO(), bson.M{"userId": userId}).Decode(&user)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, Dao.Response{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Failed to get user",
-			Data:       nil,
-		})
-		ctx.Abort()
-		return
-	}
-	ctx.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "User get successfully",
-		Data:       user,
-	})
-
-}
-
-func UpdateUser(ctx *gin.Context, userId int, body models.User) (*mongo.UpdateResult, error) {
+func UpdateUser(ctx *gin.Context, userId string, body models.User) (*mongo.UpdateResult, error) {
 	var existingUser models.User
 	err := userCollection.FindOne(context.TODO(), bson.M{"userId": userId}).Decode(&existingUser)
 	if err != nil {
@@ -154,5 +135,65 @@ func DeleteUser(ctx *gin.Context, userId int) {
 		StatusCode: http.StatusOK,
 		Message:    "User deleted successfully",
 		Data:       resp,
+	})
+}
+
+func VerifyEmail(ctx *gin.Context, email string) {
+	var existingUser models.User
+	fmt.Println(email)
+	err := userCollection.FindOne(context.TODO(), bson.M{"email": email}).Decode(&existingUser)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Data:       nil,
+		})
+		ctx.Abort()
+		return
+	}
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "email verified successfully",
+		Data:       nil,
+	})
+}
+
+func ResetPassword(ctx *gin.Context, email, password string) {
+	hashPassword, _ := HashPassword(password)
+	filter := bson.D{{"email", email}}
+	update := bson.D{{"$set", bson.D{{"password", hashPassword}}}}
+	result, err := userCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Data:       nil,
+		})
+		ctx.Abort()
+		return
+	}
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "reset password successfully",
+		Data:       result,
+	})
+}
+
+func GetUserDetails(ctx *gin.Context, userId string) {
+	var existingUser Dao.UserDetails
+	err := userCollection.FindOne(context.TODO(), bson.M{"userId": userId}).Decode(&existingUser)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Data:       nil,
+		})
+		ctx.Abort()
+		return
+	}
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "user detail fetch successfully",
+		Data:       existingUser,
 	})
 }

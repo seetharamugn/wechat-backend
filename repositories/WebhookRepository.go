@@ -41,8 +41,9 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	if chat.CreatedBy != from {
 		Numbers := []interface{}{replyUser.ID, users.ID}
 		user := models.Chat{
-			UserNumber:  Numbers,
-			CreatedBy:   from,
+			UserNumber: Numbers,
+			CreatedBy:  from,
+
 			Status:      "active",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),

@@ -1,5 +1,7 @@
 package Dao
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type Response struct {
 	StatusCode int         `json:"statusCode"`
 	Message    string      `json:"message"`
@@ -7,11 +9,20 @@ type Response struct {
 }
 
 type User struct {
-	UserId      string `json:"userId"`
+	Id          primitive.ObjectID `json:"id"`
+	UserId      string             `json:"userId"`
+	Username    string             `json:"userName"`
+	FirstName   string             `json:"firstName"`
+	LastName    string             `json:"lastName"`
+	AccessToken string             `json:"accessToken"`
+}
+
+type UserDetails struct {
 	Username    string `json:"userName"`
 	FirstName   string `json:"firstName"`
 	LastName    string `json:"lastName"`
-	AccessToken string `json:"accessToken"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phoneNumber"`
 }
 
 type ResponseMessage struct {

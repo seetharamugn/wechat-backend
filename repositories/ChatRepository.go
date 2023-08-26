@@ -30,7 +30,7 @@ var MyBucket = os.Getenv("BUCKET_NAME")
 var CloudfrontUrl = os.Getenv("CLOUDFRONT_URL")
 var Chat models.Chat
 
-func GetAllChat(ctx *gin.Context) (interface{}, error) {
+func GetAllChat(ctx *gin.Context, userId string) (interface{}, error) {
 	var chats []models.Chat
 	cursor, err := chatCollection.Find(context.TODO(), bson.M{})
 	if err != nil {

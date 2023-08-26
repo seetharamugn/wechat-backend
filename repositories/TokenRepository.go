@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/seetharamugn/wachat/Dao"
@@ -21,16 +22,18 @@ var tokenCollection *mongo.Collection = initializers.OpenCollection(initializers
 func CreateToken(ctx *gin.Context, user models.User) {
 	signature := os.Getenv("JWT_SECRET_KEY")
 	var existingUser models.User
-	err := userCollection.FindOne(context.TODO(), bson.M{"$or": []bson.M{{"email": user.Email}}}).Decode(&existingUser)
+
+	err := userCollection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
 			Data:       nil,
-			Message:    "Invalid email or password",
 		})
 		ctx.Abort()
 		return
 	}
+	fmt.Println(user.Email, user.Password)
 	flag := CheckPasswordHash(user.Password, existingUser.Password)
 	if !flag {
 		ctx.JSON(http.StatusBadRequest, Dao.Response{
@@ -51,6 +54,7 @@ func CreateToken(ctx *gin.Context, user models.User) {
 	}
 
 	response := Dao.User{
+		Id:          existingUser.ID,
 		UserId:      existingUser.UserId,
 		Username:    existingUser.Username,
 		FirstName:   existingUser.FirstName,
