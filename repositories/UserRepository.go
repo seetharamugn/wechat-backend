@@ -181,7 +181,9 @@ func ResetPassword(ctx *gin.Context, email, password string) {
 }
 
 func GetUserDetails(ctx *gin.Context, userId string) {
-	var existingUser Dao.UserDetails
+	var token models.Token
+	var existingUser Dao.User
+	tokenCollection.FindOne(context.TODO(), bson.M{"userId": userId}).Decode(&token)
 	err := userCollection.FindOne(context.TODO(), bson.M{"userId": userId}).Decode(&existingUser)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, Dao.Response{
@@ -192,6 +194,7 @@ func GetUserDetails(ctx *gin.Context, userId string) {
 		ctx.Abort()
 		return
 	}
+	existingUser.AccessToken = token.AccessToken
 	ctx.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
 		Message:    "user detail fetch successfully",

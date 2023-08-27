@@ -54,7 +54,7 @@ func CreateToken(ctx *gin.Context, user models.User) {
 	}
 
 	response := Dao.User{
-		Id:          existingUser.ID,
+		ID:          existingUser.ID,
 		UserId:      existingUser.UserId,
 		Username:    existingUser.Username,
 		FirstName:   existingUser.FirstName,

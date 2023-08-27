@@ -9,22 +9,14 @@ type Response struct {
 }
 
 type User struct {
-	Id          primitive.ObjectID `json:"id"`
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	UserId      string             `json:"userId"`
 	Username    string             `json:"userName"`
 	FirstName   string             `json:"firstName"`
 	LastName    string             `json:"lastName"`
+	Email       string             `json:"email"`
 	AccessToken string             `json:"accessToken"`
 	PhoneNumber string             `json:"phoneNumber"`
-}
-
-type UserDetails struct {
-	UserId      string `json:"userId"`
-	Username    string `json:"userName"`
-	FirstName   string `json:"firstName"`
-	LastName    string `json:"lastName"`
-	Email       string `json:"email"`
-	PhoneNumber string `json:"phoneNumber"`
 }
 
 type ResponseMessage struct {
