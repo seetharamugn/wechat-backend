@@ -15,6 +15,7 @@ type User struct {
 	FirstName   string             `json:"firstName"`
 	LastName    string             `json:"lastName"`
 	AccessToken string             `json:"accessToken"`
+	PhoneNumber string             `json:"phoneNumber"`
 }
 
 type UserDetails struct {

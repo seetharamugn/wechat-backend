@@ -60,6 +60,7 @@ func CreateToken(ctx *gin.Context, user models.User) {
 		FirstName:   existingUser.FirstName,
 		LastName:    existingUser.LastName,
 		AccessToken: token.AccessToken,
+		PhoneNumber: existingUser.PhoneNumber,
 	}
 	filter := bson.M{"userId": existingUser.UserId}
 	update := bson.D{
