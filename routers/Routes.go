@@ -7,7 +7,10 @@ import (
 
 func SetupRouter() *gin.Engine {
 	router := gin.Default()
-	router.Use(cors.Default())
+	config := cors.DefaultConfig()
+	config.AllowHeaders = append(config.AllowHeaders, "Authorization") // Add Authorization header
+	router.Use(cors.New(config))
+
 	v1 := router.Group("/api/v1")
 	{
 		UserRouter(v1)
