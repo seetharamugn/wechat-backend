@@ -7,7 +7,7 @@ import (
 
 type Chat struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	UserName    string             `bson:"name" json:"name"`
+	UserName    string             `bson:"userName" json:"userName"`
 	CreatedBy   string             `bson:"createdBy" json:"createdBy"`
 	Status      string             `bson:"status" json:"status"`
 	LastMessage string             `bson:"lastMessage" json:"lastMessage"`
