@@ -13,6 +13,14 @@ import (
 
 func GetAllChats(ctx *gin.Context) {
 	PhoneNumber := ctx.Query("phoneNumber")
+	if PhoneNumber == "" {
+		ctx.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    "phoneNumber is required",
+			Data:       nil,
+		})
+		return
+	}
 	resp, err := services.GetAllChat(ctx, PhoneNumber)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, Dao.Response{
@@ -20,6 +28,7 @@ func GetAllChats(ctx *gin.Context) {
 			Message:    err.Error(),
 			Data:       nil,
 		})
+		return
 	}
 	ctx.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,

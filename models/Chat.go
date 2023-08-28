@@ -7,10 +7,10 @@ import (
 
 type Chat struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	UserNumber  []interface{}      `bson:"userNumber" json:"userNumber"`
+	UserName    string             `bson:"name" json:"name"`
 	CreatedBy   string             `bson:"createdBy" json:"createdBy"`
 	Status      string             `bson:"status" json:"status"`
+	LastMessage string             `bson:"lastMessage" json:"lastMessage"`
 	CreatedAt   time.Time          `bson:"createdAt" json:"createdAt"`
 	UpdatedAt   time.Time          `bson:"updatedAt" json:"updatedAt"`
-	LastMessage string             `bson:"lastMessage" json:"lastMessage"`
 }
