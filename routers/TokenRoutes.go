@@ -7,6 +7,5 @@ import (
 
 func TokenRoutes(routes *gin.RouterGroup) {
 	routes.POST("/login", controllers.TokenControllers)
-	routes.POST("/validate", controllers.ValidateAccessToken)
 	//routes.POST("/refresh", controller.RefreshToken)
 }
