@@ -8,7 +8,11 @@ import (
 func SetupRouter() *gin.Engine {
 	router := gin.Default()
 	config := cors.DefaultConfig()
-	config.AllowHeaders = append(config.AllowHeaders, "Authorization") // Add Authorization header
+	config.AllowOrigins = []string{"*"}
+	config.AllowMethods = []string{"POST", "GET", "OPTIONS", "PUT", "DELETE"}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	config.AllowCredentials = true
+	config.MaxAge = 86400
 	router.Use(cors.New(config))
 
 	v1 := router.Group("/api/v1")
