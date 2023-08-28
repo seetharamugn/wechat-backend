@@ -34,7 +34,10 @@ var Chat models.Chat
 
 func GetAllChat(ctx *gin.Context, PhoneNumber string) (interface{}, error) {
 	var chats []models.Chat
-	cursor, err := chatCollection.Find(context.TODO(), bson.M{"createdBy": PhoneNumber})
+	options := options.Find()
+	options.SetSort(bson.M{"updatedAt": -1}) // Sort by timestamp in descending order
+	options.SetLimit(20)
+	cursor, err := chatCollection.Find(context.TODO(), bson.M{"createdBy": PhoneNumber}, options)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get chats",
