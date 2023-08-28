@@ -5,18 +5,19 @@ import (
 )
 
 type Message struct {
-	Id            string      `bson:"message_id" json:"message_id"`
+	Id            string      `bson:"messageId" json:"messageId"`
 	From          string      `bson:"from" json:"from"`
 	To            string      `bson:"to" json:"to"`
 	Type          string      `bson:"type" json:"type"`
 	Body          Body        `bson:"body" json:"body"`
-	ChatId        interface{} `bson:"chat_id,d" json:"chat_id"`
-	CreatedAt     time.Time   `bson:"created_at" json:"created_at"`
-	UpdatedAt     time.Time   `bson:"updated_at" json:"updated_at"`
-	ReadStatus    bool        `bson:"read_status" json:"read_status"`
-	TemplateId    string      `bson:"template_id" json:"template_id"`
-	ParentId      string      `bson:"parent_message_id" json:"parent_message_id"`
-	MessageStatus bool        `bson:"message_status" json:"message_status"`
+	ChatId        interface{} `bson:"chatId,d" json:"chatId"`
+	CreatedAt     time.Time   `bson:"createdAt" json:"createdAt"`
+	UpdatedAt     time.Time   `bson:"updatedAt" json:"updatedAt"`
+	DeletedAt     time.Time   `bson:"deletedAt" json:"deletedAt"`
+	ReadStatus    bool        `bson:"readStatus" json:"readStatus"`
+	TemplateId    string      `bson:"templateId" json:"templateId"`
+	ParentId      string      `bson:"parentMessageId" json:"parentMessageId"`
+	MessageStatus bool        `bson:"messageStatus" json:"messageStatus"`
 }
 
 type Body struct {

@@ -7,8 +7,8 @@ import (
 	"mime/multipart"
 )
 
-func GetAllChat(c *gin.Context, userId string) (interface{}, error) {
-	return repositories.GetAllChat(c, userId)
+func GetAllChat(c *gin.Context, PhoneNumber string) (interface{}, error) {
+	return repositories.GetAllChat(c, PhoneNumber)
 }
 
 func SendBulkMessage(c *gin.Context, userId, templateName string, phoneNumbers []string) (interface{}, error) {
@@ -57,4 +57,8 @@ func SendReplyByPdfMessage(c *gin.Context, userId, messageTo, messageId, caption
 
 func SendLocationMessage(c *gin.Context, messageBody models.MessageBody) (interface{}, error) {
 	return repositories.SendLocationMessage(c, messageBody)
+}
+
+func FetchConversation(c *gin.Context, chatId string) (interface{}, error) {
+	return repositories.FetchConversation(c, chatId)
 }

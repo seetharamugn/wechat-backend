@@ -12,8 +12,8 @@ import (
 )
 
 func GetAllChats(ctx *gin.Context) {
-	userId := ctx.Query("userId")
-	resp, err := services.GetAllChat(ctx, userId)
+	PhoneNumber := ctx.Query("phoneNumber")
+	resp, err := services.GetAllChat(ctx, PhoneNumber)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
@@ -300,4 +300,22 @@ func SendLocationMessage(c *gin.Context) {
 			Data:       response,
 		})
 	}
+}
+
+func FetchConversation(c *gin.Context) {
+	chatId := c.Query("chatId")
+	response, err := services.FetchConversation(c, chatId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Data:       nil})
+		return
+	}
+	c.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "Message sent successfully",
+		Data:       response,
+	})
+
 }

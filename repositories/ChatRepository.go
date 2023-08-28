@@ -13,9 +13,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/net/context"
 	"io"
 	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -30,22 +32,22 @@ var MyBucket = os.Getenv("BUCKET_NAME")
 var CloudfrontUrl = os.Getenv("CLOUDFRONT_URL")
 var Chat models.Chat
 
-func GetAllChat(ctx *gin.Context, userId string) (interface{}, error) {
+func GetAllChat(ctx *gin.Context, PhoneNumber string) (interface{}, error) {
 	var chats []models.Chat
-	cursor, err := chatCollection.Find(context.TODO(), bson.M{})
+	cursor, err := chatCollection.Find(context.TODO(), bson.M{"createdBy": PhoneNumber})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, Dao.Response{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Failed to get templates",
-			Data:       err.Error(),
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get chats",
 		})
-		ctx.Abort()
-		return chats, err
+		return nil, err
 	}
 	for cursor.Next(context.TODO()) {
 		var chat models.Chat
 		err = cursor.Decode(&chat)
 		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to decode chat",
+			})
 			return nil, err
 		}
 		chats = append(chats, chat)
@@ -511,6 +513,39 @@ func SendLocationMessage(ctx *gin.Context, messageBody models.MessageBody) (inte
 		return nil, err
 	}
 	return response, err
+}
+
+func FetchConversation(ctx *gin.Context, chatId string) ([]models.Message, error) {
+	objectId, err := primitive.ObjectIDFromHex(chatId)
+	if err != nil {
+		log.Println("Invalid id")
+	}
+	var messages []models.Message
+	options := options.Find()
+	options.SetSort(bson.M{"timestamp": -1}) // Sort by timestamp in descending order
+	options.SetLimit(20)                     // Limit to 20 messages
+
+	cursor, err := messageCollection.Find(context.TODO(), bson.M{"chatId": objectId}, options)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get messages",
+		})
+		return nil, err
+	}
+
+	for cursor.Next(context.TODO()) {
+		var message models.Message
+		err = cursor.Decode(&message)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to decode message",
+			})
+			return nil, err
+		}
+		messages = append(messages, message)
+	}
+
+	return messages, nil
 }
 
 func SendMessage(payload []byte, token string, phoneNumberId int, apiVersion string) (Dao.ResponseMessage, error) {

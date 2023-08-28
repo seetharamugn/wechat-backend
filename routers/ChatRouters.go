@@ -19,4 +19,5 @@ func ChatRouter(routes *gin.RouterGroup) {
 	routes.POST("/sendPdf", controllers.SendPdfMessage)
 	routes.POST("/sendReplyByPdfMessage", controllers.SendReplyByPdfMessage)
 	routes.POST("/sendLocation", controllers.SendLocationMessage)
+	routes.GET("/fetchConversation", controllers.FetchConversation)
 }
