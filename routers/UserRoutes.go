@@ -10,7 +10,7 @@ func UserRouter(routes *gin.RouterGroup) {
 	routes.POST("/signup", middleware.ValidateAccessToken, controllers.CreateUser)
 	routes.PUT("/update", middleware.ValidateAccessToken, controllers.Update)
 	routes.DELETE("/delete", middleware.ValidateAccessToken, controllers.Delete)
-	routes.POST("/verifyEmail", middleware.ValidateAccessToken, controllers.VerifyEmail)
-	routes.POST("/resetPassword", middleware.ValidateAccessToken, controllers.ResetPassword)
+	routes.POST("/verifyEmail", controllers.VerifyEmail)
+	routes.POST("/resetPassword", controllers.ResetPassword)
 	routes.GET("/getUserDetails", middleware.ValidateAccessToken, controllers.GetUserDetails)
 }
