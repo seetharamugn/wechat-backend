@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-json"
 	"github.com/seetharamugn/wachat/Dao"
@@ -100,7 +102,16 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId st
 	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
-	GetUrl(ctx, to, mediaId)
+	url, token, err := GetUrl(ctx, to, mediaId)
+	if err != nil {
+		return
+	}
+	fmt.Println(url)
+	file, err := DownLoadFile(ctx, url.Url, token)
+	if err != nil {
+		return
+	}
+	fmt.Println(file)
 	if chat.CreatedBy != from {
 		user := models.Chat{
 			UserName:    profileName,
@@ -144,27 +155,27 @@ func generateRandom() string {
 	return generateRandom()
 }
 
-func GetUrl(c *gin.Context, phoneNumber, mediaId string) (interface{}, error) {
+func GetUrl(c *gin.Context, phoneNumber, mediaId string) (Dao.ResponseMedia, string, error) {
 	var user models.User
 	fmt.Println(phoneNumber, mediaId)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNumber": phoneNumber}).Decode(&user)
 	WaAccount, err := GetAccessToken(c, user.UserId)
 	if err != nil {
-		return nil, err
+		return Dao.ResponseMedia{}, "", err
 	}
 	fbUrl := waUrl + "" + WaAccount.ApiVersion + "/" + mediaId
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", fbUrl, nil)
 	if err != nil {
 		fmt.Println(err)
-		return Dao.ResponseMedia{}, err
+		return Dao.ResponseMedia{}, "", err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+WaAccount.Token)
 	res, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
-		return Dao.ResponseMedia{}, err
+		return Dao.ResponseMedia{}, "", err
 	}
 	fmt.Println(res.StatusCode)
 	defer func(Body io.ReadCloser) {
@@ -176,16 +187,65 @@ func GetUrl(c *gin.Context, phoneNumber, mediaId string) (interface{}, error) {
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(err)
-		return Dao.ResponseMedia{}, err
+		return Dao.ResponseMedia{}, "", err
 	}
 	fmt.Println(string(body))
 	var response Dao.ResponseMedia
 	if res.StatusCode != http.StatusOK {
-		return Dao.ResponseMedia{}, fmt.Errorf("failed to send message: %s", string(body))
+		return Dao.ResponseMedia{}, "", fmt.Errorf("failed to send message: %s", string(body))
 	}
 	if err = json.Unmarshal(body, &response); err != nil {
-		return Dao.ResponseMedia{}, fmt.Errorf("failed to unmarshal user data: %v", err)
+		return Dao.ResponseMedia{}, "", fmt.Errorf("failed to unmarshal user data: %v", err)
 	}
 	fmt.Println(response.Url)
-	return response, nil
+	return response, WaAccount.Token, nil
+}
+
+func DownLoadFile(ctx *gin.Context, Url string, AccessToke string) (string, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", Url, nil)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+AccessToke)
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	defer resp.Body.Close()
+	imageReader := resp.Body
+
+	file, err := UploadUrlToS3(ctx, imageReader)
+	if err != nil {
+		return "", err
+	}
+	fmt.Println(file)
+	return file, nil
+}
+
+func UploadUrlToS3(ctx *gin.Context, body io.ReadCloser) (string, error) {
+	sess := initializers.ConnectAws()
+	uploader := s3manager.NewUploader(sess)
+	//upload to the s3 bucket
+	up, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket:      aws.String(MyBucket),
+		Key:         aws.String(""),
+		Body:        body,
+		ContentType: aws.String(""),
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":    "Failed to upload file",
+			"uploader": up,
+		})
+		return "", err
+	}
+	filepath := CloudfrontUrl + "1"
+	ctx.JSON(http.StatusOK, gin.H{
+		"filepath": filepath,
+	})
+	return filepath, nil
 }
