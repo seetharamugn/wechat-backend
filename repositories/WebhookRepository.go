@@ -21,7 +21,6 @@ import (
 var ReplyUserCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "replyUser")
 
 func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
-	fmt.Println(messageBody.Entry)
 	if messageBody.Entry[0].Changes[0].Value.Messages[0].Type == "text" {
 		TextMessage(ctx, messageBody.Entry[0].Changes[0].Value.Messages[0].From,
 			messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber,
@@ -101,7 +100,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId st
 	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
-	GetUrl(ctx, to, mediaId)
+	GetUrl(ctx, from, mediaId)
 	if chat.CreatedBy != from {
 		user := models.Chat{
 			UserName:    profileName,
@@ -146,14 +145,13 @@ func generateRandom() string {
 }
 
 func GetUrl(c *gin.Context, phoneNumber, mediaId string) (interface{}, error) {
-
 	var user models.User
+	fmt.Println(phoneNumber, mediaId)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNumber": phoneNumber}).Decode(&user)
 	WaAccount, err := GetAccessToken(c, user.UserId)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(WaAccount.Token, phoneNumber, mediaId)
 	fbUrl := waUrl + "" + WaAccount.ApiVersion + "/" + mediaId
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", fbUrl, nil)
