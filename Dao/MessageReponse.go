@@ -35,6 +35,7 @@ type WebhookMessage struct {
 						ID       string `json:"id"`
 					} `json:"sticker"`
 					Document struct {
+						Caption  string `json:"caption"`
 						MimeType string `json:"mime_type"`
 						Sha256   string `json:"sha256"`
 						ID       string `json:"id"`
@@ -50,6 +51,13 @@ type WebhookMessage struct {
 						MimeType string `json:"mime_type"`
 						Sha256   string `json:"sha256"`
 						ID       string `json:"id"`
+					} `json:"video"`
+					Audio struct {
+						Caption  string `json:"caption"`
+						MimeType string `json:"mime_type"`
+						Sha256   string `json:"sha256"`
+						ID       string `json:"id"`
+						Duration string `json:"duration"`
 					}
 					Errors struct {
 						Code    int    `json:"code"`

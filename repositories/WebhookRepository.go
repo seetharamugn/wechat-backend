@@ -26,31 +26,105 @@ var ReplyUserCollection *mongo.Collection = initializers.OpenCollection(initiali
 func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 
 	fmt.Println(messageBody)
-	if messageBody.Entry[0].Changes[0].Value.Messages[0].Type == "text" {
-		TextMessage(ctx, messageBody.Entry[0].Changes[0].Value.Messages[0].From,
-			messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber,
-			messageBody.Entry[0].Changes[0].Value.Messages[0].Text.Body,
-			messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name,
-			messageBody.Entry[0].Changes[0].Value.Messages[0].ID)
-	} else if messageBody.Entry[0].Changes[0].Value.Messages[0].Type == "image" {
-		ImageMessage(ctx, messageBody.Entry[0].Changes[0].Value.Messages[0].From,
-			messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber,
-			messageBody.Entry[0].Changes[0].Value.Messages[0].Image.ID,
-			messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name,
-			messageBody.Entry[0].Changes[0].Value.Messages[0].ID,
-			messageBody.Entry[0].Changes[0].Value.Messages[0].Image.Caption)
+	msg := messageBody.Entry[0].Changes[0].Value.Messages[0]
+	from := msg.From
+	phoneNumber := messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber
+	profileName := messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name
+	msgID := msg.ID
 
-	} else if messageBody.Entry[0].Changes[0].Value.Messages[0].Type == "video" {
-		fmt.Println(messageBody.Entry[0].Changes[0].Value.Messages[0].Video)
-		VideoMessage(ctx, messageBody.Entry[0].Changes[0].Value.Messages[0].From,
-			messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber,
-			messageBody.Entry[0].Changes[0].Value.Messages[0].Video.ID,
-			messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name,
-			messageBody.Entry[0].Changes[0].Value.Messages[0].ID,
-			messageBody.Entry[0].Changes[0].Value.Messages[0].Video.Caption)
-
+	switch msg.Type {
+	case "text":
+		ReceiveMessage(ctx, from, phoneNumber, "", profileName, msgID, msg.Text.Body, "", "text")
+	case "image":
+		//ImageMessage(ctx, from, phoneNumber, msg.Image.ID, profileName, msgID, msg.Image.Caption)
+		ReceiveMessage(ctx, from, phoneNumber, msg.Image.ID, profileName, msgID, "", msg.Image.Caption, "image")
+	case "video":
+		//VideoMessage(ctx, from, phoneNumber, msg.Video.ID, profileName, msgID, msg.Video.Caption)
+		ReceiveMessage(ctx, from, phoneNumber, msg.Video.ID, profileName, msgID, "", msg.Video.Caption, "video")
+	case "audio":
+		AudioMessage(ctx, from, phoneNumber, msg.Audio.ID, profileName, msgID, msg.Audio.Caption)
+	case "document":
+		DocumentMessage(ctx, from, phoneNumber, msg.Document.ID, profileName, msgID, msg.Document.Caption)
 	}
 }
+
+func ReceiveMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, messageBody, caption, mediaType string) {
+	var chatId interface{}
+	var replyUser models.ReplyUser
+	var chat models.Chat
+	var users models.User
+
+	// Find or create ReplyUser
+	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
+	chatId = replyUser.ID
+	if replyUser.UserId == "" {
+		userId := generateRandom()
+		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+	}
+
+	// Find or create Chat
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
+	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
+	chatId = chat.ID
+
+	// Handle media type-specific logic
+	var fileExtension, mimeType string
+	if mediaType == "image" {
+		fileExtension = ".jpg"
+		mimeType = "image/jpeg"
+	} else if mediaType == "video" {
+		fileExtension = ".mp4"
+		mimeType = "video/mp4"
+	}
+
+	// Get media URL and token
+	url, token, err := GetUrl(ctx, to, mediaId)
+	if err != nil {
+		return
+	}
+
+	// Download media file
+	file, err := DownLoadFile(ctx, url.Url, token, fileExtension)
+	if err != nil {
+		return
+	}
+
+	// Update or create Chat
+	if chat.CreatedBy != from {
+		user := models.Chat{
+			UserName:    profileName,
+			CreatedBy:   to,
+			LastMessage: file,
+			Status:      "active",
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}
+		data, _ := chatCollection.InsertOne(context.TODO(), user)
+		chatId = data.InsertedID
+	} else {
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
+	}
+
+	// Insert the message
+	message := models.Message{
+		Id:   messageId,
+		From: from,
+		To:   to,
+		Type: mediaType,
+		Body: models.Body{
+			Text:     messageBody,
+			Url:      file,
+			MimeType: mimeType,
+		},
+		ChatId:        chatId,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+		ReadStatus:    "Received",
+		MessageStatus: false,
+	}
+	messageCollection.InsertOne(context.TODO(), message)
+}
+
 func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId string) {
 	var chatId interface{}
 	var replyUser models.ReplyUser
@@ -62,7 +136,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		userId := generateRandom()
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 
@@ -93,7 +167,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		ChatId:        chatId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
-		ReadStatus:    false,
+		ReadStatus:    "Received",
 		MessageStatus: false,
 	}
 	messageCollection.InsertOne(context.TODO(), message)
@@ -110,7 +184,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		userId := generateRandom()
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 	url, token, err := GetUrl(ctx, to, mediaId)
@@ -150,7 +224,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		ChatId:        chatId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
-		ReadStatus:    false,
+		ReadStatus:    "Received",
 		MessageStatus: false,
 	}
 	messageCollection.InsertOne(context.TODO(), message)
@@ -167,7 +241,7 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		userId := generateRandom()
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 	url, token, err := GetUrl(ctx, to, mediaId)
@@ -202,17 +276,133 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		Body: models.Body{
 			Text:     caption,
 			Url:      file,
-			MimeType: "image/jpeg",
+			MimeType: "video/mp4",
 		},
 		ChatId:        chatId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
-		ReadStatus:    false,
+		ReadStatus:    "Received",
 		MessageStatus: false,
 	}
 	messageCollection.InsertOne(context.TODO(), message)
 
 }
+
+func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, caption string) {
+	var chatId interface{}
+	var replyUser models.ReplyUser
+	var chat models.Chat
+	var users models.User
+	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
+	chatId = replyUser.ID
+	if replyUser.UserId == "" {
+		userId := generateRandom()
+		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+	}
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
+	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
+	chatId = chat.ID
+	url, token, err := GetUrl(ctx, to, mediaId)
+	if err != nil {
+		return
+	}
+	file, err := DownLoadFile(ctx, url.Url, token, ".mp3")
+	if err != nil {
+		return
+	}
+	if chat.CreatedBy != from {
+		user := models.Chat{
+			UserName:    profileName,
+			CreatedBy:   to,
+			LastMessage: file,
+			Status:      "active",
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}
+		data, _ := chatCollection.InsertOne(context.TODO(), user)
+		chatId = data.InsertedID
+
+	} else {
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
+	}
+
+	message := models.Message{
+		Id:   messageId,
+		From: from,
+		To:   to,
+		Type: "image",
+		Body: models.Body{
+			Text:     caption,
+			Url:      file,
+			MimeType: "audio/mp3",
+		},
+		ChatId:        chatId,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+		ReadStatus:    "Received",
+		MessageStatus: false,
+	}
+	messageCollection.InsertOne(context.TODO(), message)
+}
+
+func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, caption string) {
+	var chatId interface{}
+	var replyUser models.ReplyUser
+	var chat models.Chat
+	var users models.User
+	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
+	chatId = replyUser.ID
+	if replyUser.UserId == "" {
+		userId := generateRandom()
+		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+	}
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
+	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
+	chatId = chat.ID
+	url, token, err := GetUrl(ctx, to, mediaId)
+	if err != nil {
+		return
+	}
+	file, err := DownLoadFile(ctx, url.Url, token, ".pdf")
+	if err != nil {
+		return
+	}
+	if chat.CreatedBy != from {
+		user := models.Chat{
+			UserName:    profileName,
+			CreatedBy:   to,
+			LastMessage: file,
+			Status:      "active",
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}
+		data, _ := chatCollection.InsertOne(context.TODO(), user)
+		chatId = data.InsertedID
+
+	} else {
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
+	}
+
+	message := models.Message{
+		Id:   messageId,
+		From: from,
+		To:   to,
+		Type: "image",
+		Body: models.Body{
+			Text:     caption,
+			Url:      file,
+			MimeType: "document/pdf",
+		},
+		ChatId:        chatId,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+		ReadStatus:    "Received",
+		MessageStatus: false,
+	}
+	messageCollection.InsertOne(context.TODO(), message)
+
+}
+
 func generateRandom() string {
 	randNumber := 10000000 + rand.Intn(99999999-10000000)
 	var user models.ReplyUser

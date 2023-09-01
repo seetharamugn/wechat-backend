@@ -12,4 +12,5 @@ type BulkMessage struct {
 	ContactNumbers string             `bson:"contactNumbers" json:"contactNumbers"`
 	ScheduledAt    time.Time          `bson:"scheduledTime" json:"scheduledTime"`
 	CreateAt       time.Time          `bson:"createAt" json:"createAt"`
+	Status         string             `bson:"status" json:"status"`
 }

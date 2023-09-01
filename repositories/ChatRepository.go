@@ -668,7 +668,7 @@ func InsertMessageIntoDB(ctx *gin.Context, chatId primitive.ObjectID, messageId,
 		ChatId:        chatId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
-		ReadStatus:    false,
+		ReadStatus:    "sent",
 		MessageStatus: false,
 		ParentId:      parentMessageId,
 	}

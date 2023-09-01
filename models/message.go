@@ -14,7 +14,7 @@ type Message struct {
 	CreatedAt     time.Time   `bson:"createdAt" json:"createdAt"`
 	UpdatedAt     time.Time   `bson:"updatedAt" json:"updatedAt"`
 	DeletedAt     time.Time   `bson:"deletedAt" json:"deletedAt"`
-	ReadStatus    bool        `bson:"readStatus" json:"readStatus"`
+	ReadStatus    string      `bson:"readStatus" json:"readStatus"`
 	TemplateId    string      `bson:"templateId" json:"templateId"`
 	ParentId      string      `bson:"parentMessageId" json:"parentMessageId"`
 	MessageStatus bool        `bson:"messageStatus" json:"messageStatus"`
