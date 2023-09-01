@@ -148,7 +148,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 
-	if chat.CreatedBy != from {
+	if chat.CreatedBy != to {
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   to,
@@ -203,7 +203,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	if err != nil {
 		return
 	}
-	if chat.CreatedBy != from {
+	if chat.CreatedBy != to {
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   to,
@@ -260,7 +260,7 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	if err != nil {
 		return
 	}
-	if chat.CreatedBy != from {
+	if chat.CreatedBy != to {
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   to,
@@ -318,7 +318,7 @@ func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	if err != nil {
 		return
 	}
-	if chat.CreatedBy != from {
+	if chat.CreatedBy != to {
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   to,
@@ -375,7 +375,7 @@ func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId
 	if err != nil {
 		return
 	}
-	if chat.CreatedBy != from {
+	if chat.CreatedBy != to {
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   to,
