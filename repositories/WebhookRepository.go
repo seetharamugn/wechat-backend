@@ -1,9 +1,10 @@
 package repositories
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-json"
 	"github.com/seetharamugn/wachat/Dao"
@@ -214,11 +215,14 @@ func DownLoadFile(ctx *gin.Context, Url string, AccessToke string) (string, erro
 		fmt.Println(err)
 		return "", err
 	}
-	defer resp.Body.Close()
-	imageReader := resp.Body
-	fmt.Println(resp.Body)
-	fmt.Println(resp.StatusCode)
-	file, err := UploadUrlToS3(ctx, imageReader)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	fmt.Println(string(body))
+
+	file, err := UploadUrlToS3(ctx, body)
 	if err != nil {
 		return "", err
 	}
@@ -226,15 +230,15 @@ func DownLoadFile(ctx *gin.Context, Url string, AccessToke string) (string, erro
 	return file, nil
 }
 
-func UploadUrlToS3(ctx *gin.Context, body io.ReadCloser) (string, error) {
+func UploadUrlToS3(ctx *gin.Context, body []byte) (string, error) {
 	sess := initializers.ConnectAws()
-	uploader := s3manager.NewUploader(sess)
-	//upload to the s3 bucket
-	up, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket:      aws.String(MyBucket),
-		Key:         aws.String(""),
-		Body:        body,
-		ContentType: aws.String(""),
+	svc := s3.New(sess)
+
+	// Upload the data to S3
+	up, err := svc.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(MyBucket),
+		Key:    aws.String("1.jpg"),
+		Body:   aws.ReadSeekCloser(bytes.NewReader(body)),
 	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
