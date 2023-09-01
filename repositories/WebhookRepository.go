@@ -46,93 +46,6 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 	}
 }
 
-func Message(ctx *gin.Context, from, to, mediaId, profileName, messageId, messageBody, caption, mediaType string) {
-	var chatId interface{}
-	var replyUser models.ReplyUser
-	var chat models.Chat
-	var users models.User
-
-	// Find or create ReplyUser
-	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
-	chatId = replyUser.ID
-	if replyUser.UserId == "" {
-		userId := generateRandom()
-		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
-	}
-
-	// Find or create Chat
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
-	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
-	chatId = chat.ID
-
-	// Handle media type-specific logic
-	var fileExtension, mimeType string
-	if mediaType == "image" {
-		fileExtension = ".jpg"
-		mimeType = "image/jpeg"
-	} else if mediaType == "video" {
-		fileExtension = ".mp4"
-		mimeType = "video/mp4"
-	}
-
-	// Get media URL and token
-	url, token, err := GetUrl(ctx, to, mediaId)
-	if err != nil {
-		return
-	}
-
-	// Download media file
-	file, err := DownLoadFile(ctx, url.Url, token, fileExtension)
-	if err != nil {
-		return
-	}
-
-	// Update or create Chat
-	if chat.CreatedBy != from {
-		user := models.Chat{
-			UserName:    profileName,
-			CreatedBy:   to,
-			LastMessage: file,
-			Status:      "active",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		}
-		data, _ := chatCollection.InsertOne(context.TODO(), user)
-		chatId = data.InsertedID
-	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
-	}
-
-	// Insert the message
-	message := models.Message{
-		Id:   messageId,
-		From: from,
-		To:   to,
-		Type: mediaType,
-		Body: models.Body{
-			Text:     messageBody,
-			Url:      file,
-			MimeType: mimeType,
-		},
-		ChatId:        chatId,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		ReadStatus:    "Received",
-		MessageStatus: false,
-	}
-	messageCollection.InsertOne(context.TODO(), message)
-}
-
-// Usage:
-//// For text message
-//SendMessage(ctx, from, to, "", profileName, messageId, messageBody, "", "text")
-//
-//// For image message
-//SendMessage(ctx, from, to, mediaId, profileName, messageId, "", caption, "image")
-//
-//// For video message
-//SendMessage(ctx, from, to, mediaId, profileName, messageId, "", caption, "video")
-
 func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId string) {
 	var chatId interface{}
 	var replyUser models.ReplyUser
@@ -280,7 +193,7 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		Id:   messageId,
 		From: from,
 		To:   to,
-		Type: "image",
+		Type: "video",
 		Body: models.Body{
 			Text:     caption,
 			Url:      file,
@@ -338,7 +251,7 @@ func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		Id:   messageId,
 		From: from,
 		To:   to,
-		Type: "image",
+		Type: "audio",
 		Body: models.Body{
 			Text:     caption,
 			Url:      file,
@@ -395,7 +308,7 @@ func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId
 		Id:   messageId,
 		From: from,
 		To:   to,
-		Type: "image",
+		Type: "document",
 		Body: models.Body{
 			Text:     caption,
 			Url:      file,
