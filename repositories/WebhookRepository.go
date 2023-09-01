@@ -38,6 +38,11 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 			messageBody.Entry[0].Changes[0].Value.Messages[0].ID)
 
 	} else if messageBody.Entry[0].Changes[0].Value.Messages[0].Type == "video" {
+		VideoMessage(ctx, messageBody.Entry[0].Changes[0].Value.Messages[0].From,
+			messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber,
+			messageBody.Entry[0].Changes[0].Value.Messages[0].Image.ID,
+			messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name,
+			messageBody.Entry[0].Changes[0].Value.Messages[0].ID)
 
 	}
 }
@@ -107,16 +112,15 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId st
 	if err != nil {
 		return
 	}
-	file, err := DownLoadFile(ctx, url.Url, token)
+	file, err := DownLoadFile(ctx, url.Url, token, ".jpg")
 	if err != nil {
 		return
 	}
-	fmt.Println(file)
 	if chat.CreatedBy != from {
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   to,
-			LastMessage: mediaId,
+			LastMessage: file,
 			Status:      "active",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
@@ -125,16 +129,16 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId st
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": mediaId, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
 		Id:   messageId,
 		From: from,
 		To:   to,
-		Type: "text",
+		Type: "image",
 		Body: models.Body{
-			Text: mediaId,
+			Url: file,
 		},
 		ChatId:        chatId,
 		CreatedAt:     time.Now(),
@@ -145,6 +149,10 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId st
 	messageCollection.InsertOne(context.TODO(), message)
 }
 
+func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId string) (string, error) {
+	return "", nil
+
+}
 func generateRandom() string {
 	randNumber := 10000000 + rand.Intn(99999999-10000000)
 	var user models.ReplyUser
@@ -201,7 +209,7 @@ func GetUrl(c *gin.Context, phoneNumber, mediaId string) (Dao.ResponseMedia, str
 	return response, WaAccount.Token, nil
 }
 
-func DownLoadFile(ctx *gin.Context, Url string, AccessToke string) (string, error) {
+func DownLoadFile(ctx *gin.Context, Url string, AccessToke, fileExtension string) (string, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", Url, nil)
 	if err != nil {
@@ -222,22 +230,21 @@ func DownLoadFile(ctx *gin.Context, Url string, AccessToke string) (string, erro
 	}
 	fmt.Println(string(body))
 
-	file, err := UploadUrlToS3(ctx, body)
+	file, err := UploadUrlToS3(ctx, body, fileExtension)
 	if err != nil {
 		return "", err
 	}
-	fmt.Println(file)
 	return file, nil
 }
 
-func UploadUrlToS3(ctx *gin.Context, body []byte) (string, error) {
+func UploadUrlToS3(ctx *gin.Context, body []byte, fileExtension string) (string, error) {
 	sess := initializers.ConnectAws()
 	svc := s3.New(sess)
-
+	fileName := GenerateRandomString(12)
 	// Upload the data to S3
 	up, err := svc.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(MyBucket),
-		Key:    aws.String("1.jpg"),
+		Key:    aws.String(fileName + fileExtension),
 		Body:   aws.ReadSeekCloser(bytes.NewReader(body)),
 	})
 	if err != nil {
@@ -247,9 +254,22 @@ func UploadUrlToS3(ctx *gin.Context, body []byte) (string, error) {
 		})
 		return "", err
 	}
-	filepath := CloudfrontUrl + "1"
+	filepath := CloudfrontUrl + fileName + fileExtension
 	ctx.JSON(http.StatusOK, gin.H{
 		"filepath": filepath,
 	})
 	return filepath, nil
+}
+
+func GenerateRandomString(length int) string {
+	rand.Seed(time.Now().UnixNano())
+
+	characters := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	result := make([]byte, length)
+
+	for i := 0; i < length; i++ {
+		result[i] = characters[rand.Intn(len(characters))]
+	}
+
+	return string(result)
 }
