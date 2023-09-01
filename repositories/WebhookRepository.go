@@ -100,7 +100,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId st
 	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
-	GetUrl(ctx, from, mediaId)
+	GetUrl(ctx, to, mediaId)
 	if chat.CreatedBy != from {
 		user := models.Chat{
 			UserName:    profileName,
