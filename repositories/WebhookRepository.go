@@ -34,13 +34,11 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 
 	switch msg.Type {
 	case "text":
-		ReceiveMessage(ctx, from, phoneNumber, "", profileName, msgID, msg.Text.Body, "", "text")
+		TextMessage(ctx, from, phoneNumber, msg.Text.Body, profileName, msgID)
 	case "image":
-		//ImageMessage(ctx, from, phoneNumber, msg.Image.ID, profileName, msgID, msg.Image.Caption)
-		ReceiveMessage(ctx, from, phoneNumber, msg.Image.ID, profileName, msgID, "", msg.Image.Caption, "image")
+		ImageMessage(ctx, from, phoneNumber, msg.Image.ID, profileName, msgID, msg.Image.Caption)
 	case "video":
-		//VideoMessage(ctx, from, phoneNumber, msg.Video.ID, profileName, msgID, msg.Video.Caption)
-		ReceiveMessage(ctx, from, phoneNumber, msg.Video.ID, profileName, msgID, "", msg.Video.Caption, "video")
+		VideoMessage(ctx, from, phoneNumber, msg.Video.ID, profileName, msgID, msg.Video.Caption)
 	case "audio":
 		AudioMessage(ctx, from, phoneNumber, msg.Audio.ID, profileName, msgID, msg.Audio.Caption)
 	case "document":
@@ -48,7 +46,7 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 	}
 }
 
-func ReceiveMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, messageBody, caption, mediaType string) {
+func Message(ctx *gin.Context, from, to, mediaId, profileName, messageId, messageBody, caption, mediaType string) {
 	var chatId interface{}
 	var replyUser models.ReplyUser
 	var chat models.Chat
@@ -124,6 +122,16 @@ func ReceiveMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId,
 	}
 	messageCollection.InsertOne(context.TODO(), message)
 }
+
+// Usage:
+//// For text message
+//SendMessage(ctx, from, to, "", profileName, messageId, messageBody, "", "text")
+//
+//// For image message
+//SendMessage(ctx, from, to, mediaId, profileName, messageId, "", caption, "image")
+//
+//// For video message
+//SendMessage(ctx, from, to, mediaId, profileName, messageId, "", caption, "video")
 
 func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId string) {
 	var chatId interface{}
