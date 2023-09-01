@@ -38,7 +38,7 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 
 	}
 }
-func TextMessage(ctx *gin.Context, from, to, messageID, profileName, messageId string) {
+func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId string) {
 	var chatId interface{}
 	var replyUser models.ReplyUser
 	var chat models.Chat
@@ -53,53 +53,6 @@ func TextMessage(ctx *gin.Context, from, to, messageID, profileName, messageId s
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 
-	if chat.CreatedBy != from {
-		user := models.Chat{
-			UserName:    profileName,
-			CreatedBy:   to,
-			LastMessage: messageID,
-			Status:      "active",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		}
-		data, _ := chatCollection.InsertOne(context.TODO(), user)
-		chatId = data.InsertedID
-
-	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": messageID, "updatedAt": time.Now()}})
-	}
-
-	message := models.Message{
-		Id:   messageId,
-		From: from,
-		To:   to,
-		Type: "text",
-		Body: models.Body{
-			Text: messageID,
-		},
-		ChatId:        chatId,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		ReadStatus:    false,
-		MessageStatus: false,
-	}
-	messageCollection.InsertOne(context.TODO(), message)
-}
-
-func ImageMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId string) {
-	var chatId interface{}
-	var replyUser models.ReplyUser
-	var chat models.Chat
-	var users models.User
-	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
-	chatId = replyUser.ID
-	if replyUser.UserId == "" {
-		userId := generateRandom()
-		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
-	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
-	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
-	chatId = chat.ID
 	if chat.CreatedBy != from {
 		user := models.Chat{
 			UserName:    profileName,
@@ -133,6 +86,54 @@ func ImageMessage(ctx *gin.Context, from, to, messageBody, profileName, messageI
 	messageCollection.InsertOne(context.TODO(), message)
 }
 
+func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId string) {
+	var chatId interface{}
+	var replyUser models.ReplyUser
+	var chat models.Chat
+	var users models.User
+	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
+	chatId = replyUser.ID
+	if replyUser.UserId == "" {
+		userId := generateRandom()
+		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+	}
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": from}).Decode(&chat)
+	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
+	chatId = chat.ID
+	GetUrl(ctx, to, mediaId)
+	if chat.CreatedBy != from {
+		user := models.Chat{
+			UserName:    profileName,
+			CreatedBy:   to,
+			LastMessage: mediaId,
+			Status:      "active",
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}
+		data, _ := chatCollection.InsertOne(context.TODO(), user)
+		chatId = data.InsertedID
+
+	} else {
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": mediaId, "updatedAt": time.Now()}})
+	}
+
+	message := models.Message{
+		Id:   messageId,
+		From: from,
+		To:   to,
+		Type: "text",
+		Body: models.Body{
+			Text: mediaId,
+		},
+		ChatId:        chatId,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+		ReadStatus:    false,
+		MessageStatus: false,
+	}
+	messageCollection.InsertOne(context.TODO(), message)
+}
+
 func generateRandom() string {
 	randNumber := 10000000 + rand.Intn(99999999-10000000)
 	var user models.ReplyUser
@@ -143,7 +144,7 @@ func generateRandom() string {
 	return generateRandom()
 }
 
-func GetUrl(c *gin.Context, phoneNumber, messageId string) (interface{}, error) {
+func GetUrl(c *gin.Context, phoneNumber, mediaId string) (interface{}, error) {
 
 	var user models.User
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNumber": phoneNumber}).Decode(&user)
@@ -151,7 +152,7 @@ func GetUrl(c *gin.Context, phoneNumber, messageId string) (interface{}, error) 
 	if err != nil {
 		return nil, err
 	}
-	fbUrl := waUrl + "" + WaAccount.ApiVersion + "/" + messageId
+	fbUrl := waUrl + "" + WaAccount.ApiVersion + "/" + mediaId
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", fbUrl, nil)
 	if err != nil {
