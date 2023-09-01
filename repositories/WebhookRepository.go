@@ -34,7 +34,7 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 			messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name,
 			messageBody.Entry[0].Changes[0].Value.Messages[0].ID)
 
-	} else if messageBody.Entry[0].Changes[0].Value.Messages[0].Type == "image" {
+	} else if messageBody.Entry[0].Changes[0].Value.Messages[0].Type == "video" {
 
 	}
 }
@@ -152,6 +152,7 @@ func GetUrl(c *gin.Context, phoneNumber, mediaId string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(WaAccount.Token, phoneNumber, mediaId)
 	fbUrl := waUrl + "" + WaAccount.ApiVersion + "/" + mediaId
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", fbUrl, nil)
@@ -166,6 +167,7 @@ func GetUrl(c *gin.Context, phoneNumber, mediaId string) (interface{}, error) {
 		fmt.Println(err)
 		return Dao.ResponseMedia{}, err
 	}
+	fmt.Println(res.StatusCode)
 	defer func(Body io.ReadCloser) {
 		err = Body.Close()
 		if err != nil {
