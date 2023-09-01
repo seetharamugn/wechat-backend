@@ -161,7 +161,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": messageBody, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": to}, bson.M{"$set": bson.M{"lastMessage": messageBody, "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
@@ -216,7 +216,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": to}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
@@ -273,7 +273,7 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": to}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
@@ -331,7 +331,7 @@ func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": to}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
@@ -388,7 +388,7 @@ func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": from}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": to}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
