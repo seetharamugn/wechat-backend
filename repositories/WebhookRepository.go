@@ -21,6 +21,7 @@ import (
 var ReplyUserCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "replyUser")
 
 func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
+	fmt.Println(messageBody.Entry)
 	if messageBody.Entry[0].Changes[0].Value.Messages[0].Type == "text" {
 		TextMessage(ctx, messageBody.Entry[0].Changes[0].Value.Messages[0].From,
 			messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber,
