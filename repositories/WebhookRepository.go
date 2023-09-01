@@ -44,10 +44,10 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 		fmt.Println(messageBody.Entry[0].Changes[0].Value.Messages[0].Video)
 		VideoMessage(ctx, messageBody.Entry[0].Changes[0].Value.Messages[0].From,
 			messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber,
-			messageBody.Entry[0].Changes[0].Value.Messages[0].Image.ID,
+			messageBody.Entry[0].Changes[0].Value.Messages[0].Video.ID,
 			messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name,
 			messageBody.Entry[0].Changes[0].Value.Messages[0].ID,
-			messageBody.Entry[0].Changes[0].Value.Messages[0].Image.Caption)
+			messageBody.Entry[0].Changes[0].Value.Messages[0].Video.Caption)
 
 	}
 }
