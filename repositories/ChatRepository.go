@@ -551,6 +551,25 @@ func FetchConversation(ctx *gin.Context, chatId string) ([]models.Message, error
 	return messages, nil
 }
 
+func GetMessagesCount(ctx *gin.Context, phoneNumber string) (interface{}, error) {
+	receivingCount, err := messageCollection.CountDocuments(context.TODO(), bson.M{"to": phoneNumber})
+	if err != nil {
+		panic(err)
+		return nil, err
+	}
+	sendCount, err := messageCollection.CountDocuments(context.TODO(), bson.M{"from": phoneNumber})
+	if err != nil {
+		panic(err)
+		return nil, err
+	}
+	result := map[string]interface{}{
+		"receivingCount": receivingCount,
+		"sendCount":      sendCount,
+	}
+	return result, nil
+
+}
+
 func SendMessage(payload []byte, token string, phoneNumberId int, apiVersion string) (Dao.ResponseMessage, error) {
 	fbUrl := waUrl + "" + apiVersion + "/" + strconv.Itoa(phoneNumberId) + "/messages"
 	client := &http.Client{}

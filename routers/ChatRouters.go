@@ -21,4 +21,5 @@ func ChatRouter(routes *gin.RouterGroup) {
 	routes.POST("/sendReplyByPdfMessage", middleware.ValidateAccessToken, controllers.SendReplyByPdfMessage)
 	routes.POST("/sendLocation", middleware.ValidateAccessToken, controllers.SendLocationMessage)
 	routes.GET("/fetchConversation", middleware.ValidateAccessToken, controllers.FetchConversation)
+	routes.GET("/GetMessagesCount", controllers.GetMessagesCount)
 }

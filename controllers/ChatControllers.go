@@ -328,3 +328,21 @@ func FetchConversation(c *gin.Context) {
 	})
 
 }
+
+func GetMessagesCount(c *gin.Context) {
+	phoneNumber := c.Query("PhoneNumber")
+	response, err := services.GetMessagesCount(c, phoneNumber)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, Dao.Response{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Data:       nil})
+		return
+	}
+	c.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "Message count fetch successfully",
+		Data:       response,
+	})
+
+}

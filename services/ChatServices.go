@@ -62,3 +62,7 @@ func SendLocationMessage(c *gin.Context, messageBody models.MessageBody) (interf
 func FetchConversation(c *gin.Context, chatId string) (interface{}, error) {
 	return repositories.FetchConversation(c, chatId)
 }
+
+func GetMessagesCount(c *gin.Context, phoneNumber string) (interface{}, error) {
+	return repositories.GetMessagesCount(c, phoneNumber)
+}

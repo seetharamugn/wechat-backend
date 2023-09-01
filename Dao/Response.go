@@ -29,3 +29,21 @@ type ResponseMessage struct {
 		Id string `json:"id"`
 	}
 }
+
+//{
+//  "messaging_product": "whatsapp",
+//  "url": "<URL>",
+//  "mime_type": "<MIME_TYPE>",
+//  "sha256": "<HASH>",
+//  "file_size": "<FILE_SIZE>",
+//  "id": "<MEDIA_ID>"
+//}
+
+type ResponseMedia struct {
+	MessagingProduct string `json:"messaging_product"`
+	Url              string `json:"url"`
+	MimeType         string `json:"mime_type"`
+	Sha256           string `json:"sha256"`
+	FileSize         string `json:"file_size"`
+	Id               string `json:"id"`
+}
