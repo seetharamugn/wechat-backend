@@ -106,7 +106,6 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId st
 	if err != nil {
 		return
 	}
-	fmt.Println(url)
 	file, err := DownLoadFile(ctx, url.Url, token)
 	if err != nil {
 		return
@@ -217,7 +216,8 @@ func DownLoadFile(ctx *gin.Context, Url string, AccessToke string) (string, erro
 	}
 	defer resp.Body.Close()
 	imageReader := resp.Body
-
+	fmt.Println(resp.Body)
+	fmt.Println(resp.StatusCode)
 	file, err := UploadUrlToS3(ctx, imageReader)
 	if err != nil {
 		return "", err
