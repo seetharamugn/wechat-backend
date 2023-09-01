@@ -178,6 +178,7 @@ func GetUrl(c *gin.Context, phoneNumber, mediaId string) (interface{}, error) {
 		fmt.Println(err)
 		return Dao.ResponseMedia{}, err
 	}
+	fmt.Println(string(body))
 	var response Dao.ResponseMedia
 	if res.StatusCode != http.StatusOK {
 		return Dao.ResponseMedia{}, fmt.Errorf("failed to send message: %s", string(body))
