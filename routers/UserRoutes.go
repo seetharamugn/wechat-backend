@@ -7,7 +7,7 @@ import (
 )
 
 func UserRouter(routes *gin.RouterGroup) {
-	routes.POST("/signup", middleware.ValidateAccessToken, controllers.CreateUser)
+	routes.POST("/signup", controllers.CreateUser)
 	routes.PUT("/update", middleware.ValidateAccessToken, controllers.Update)
 	routes.DELETE("/delete", middleware.ValidateAccessToken, controllers.Delete)
 	routes.POST("/verifyEmail", controllers.VerifyEmail)
