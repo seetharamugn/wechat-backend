@@ -20,6 +20,6 @@ func ChatRouter(routes *gin.RouterGroup) {
 	routes.POST("/sendPdf", middleware.ValidateAccessToken, controllers.SendPdfMessage)
 	routes.POST("/sendReplyByPdfMessage", middleware.ValidateAccessToken, controllers.SendReplyByPdfMessage)
 	routes.POST("/sendLocation", middleware.ValidateAccessToken, controllers.SendLocationMessage)
-	routes.GET("/fetchConversation", middleware.ValidateAccessToken, controllers.FetchConversation)
-	routes.GET("/GetMessagesCount", controllers.GetMessagesCount)
+	routes.GET("/fetchConversation", controllers.FetchConversation)
+	routes.GET("/getMessagesCount", controllers.GetMessagesCount)
 }

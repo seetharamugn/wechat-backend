@@ -319,11 +319,12 @@ func FetchConversation(c *gin.Context) {
 			StatusCode: http.StatusBadRequest,
 			Message:    err.Error(),
 			Data:       nil})
+		c.Abort()
 		return
 	}
 	c.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
-		Message:    "Message sent successfully",
+		Message:    "get Message successfully",
 		Data:       response,
 	})
 
