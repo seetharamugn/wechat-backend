@@ -63,12 +63,14 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 
 	if chat.CreatedBy != to {
 		user := models.Chat{
-			UserName:    profileName,
-			CreatedBy:   to,
-			LastMessage: messageBody,
-			Status:      "active",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			UserName:  profileName,
+			CreatedBy: to,
+			LastMessageBody: models.Body{
+				Text: messageBody,
+			},
+			Status:    "active",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
@@ -118,12 +120,16 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	}
 	if chat.CreatedBy != to {
 		user := models.Chat{
-			UserName:    profileName,
-			CreatedBy:   to,
-			LastMessage: file,
-			Status:      "active",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			UserName:  profileName,
+			CreatedBy: to,
+			LastMessageBody: models.Body{
+				Text:     caption,
+				Url:      file,
+				MimeType: "image/jpeg",
+			},
+			Status:    "active",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
@@ -175,12 +181,16 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	}
 	if chat.CreatedBy != to {
 		user := models.Chat{
-			UserName:    profileName,
-			CreatedBy:   to,
-			LastMessage: file,
-			Status:      "active",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			UserName:  profileName,
+			CreatedBy: to,
+			LastMessageBody: models.Body{
+				Text:     caption,
+				Url:      file,
+				MimeType: "video/mp4",
+			},
+			Status:    "active",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
@@ -233,12 +243,16 @@ func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	}
 	if chat.CreatedBy != to {
 		user := models.Chat{
-			UserName:    profileName,
-			CreatedBy:   to,
-			LastMessage: file,
-			Status:      "active",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			UserName:  profileName,
+			CreatedBy: to,
+			LastMessageBody: models.Body{
+				Text:     caption,
+				Url:      file,
+				MimeType: "audio/mp3",
+			},
+			Status:    "active",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
@@ -290,12 +304,16 @@ func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId
 	}
 	if chat.CreatedBy != to {
 		user := models.Chat{
-			UserName:    profileName,
-			CreatedBy:   to,
-			LastMessage: file,
-			Status:      "active",
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
+			UserName:  profileName,
+			CreatedBy: to,
+			LastMessageBody: models.Body{
+				Text:     caption,
+				Url:      file,
+				MimeType: "document/pdf",
+			},
+			Status:    "active",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
