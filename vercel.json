@@ -1,9 +1,0 @@
-{
-  "functions": {
-    "hello": {
-      "handler": "./main.go",
-      "memory": 128,
-      "maxDuration": 10
-    }
-  }
-}
