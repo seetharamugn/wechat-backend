@@ -15,8 +15,8 @@ func SendBulkMessage(c *gin.Context, userId, templateName string, phoneNumbers [
 	return repositories.SendBulkMessage(c, userId, templateName, phoneNumbers)
 }
 
-func SendTextMessage(c *gin.Context, messageBody models.MessageBody) (interface{}, error) {
-	return repositories.SendTextMessage(c, messageBody)
+func SendTextMessage(c *gin.Context, userId, messageTo, body string) {
+	repositories.SendTextMessage(c, userId, messageTo, body)
 
 }
 
@@ -24,8 +24,8 @@ func SendTextMessageWithPreviewURL(c *gin.Context, messageBody models.MessageBod
 	return repositories.SendTextMessageWithPreviewURL(c, messageBody)
 }
 
-func SendReplyByTextMessage(c *gin.Context, messageBody models.MessageBody) (interface{}, error) {
-	return repositories.SendReplyByTextMessage(c, messageBody)
+func SendReplyByTextMessage(c *gin.Context, userId, messageId, messageTo, body string) (interface{}, error) {
+	return repositories.SendReplyByTextMessage(c, userId, messageId, messageTo, body)
 }
 
 func SendReplyByReaction(c *gin.Context, messageBody models.MessageBody) (interface{}, error) {

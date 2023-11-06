@@ -74,63 +74,51 @@ func SendBulkMessage(c *gin.Context) {
 }
 
 func SendTextMessage(c *gin.Context) {
-	var requestBody models.MessageBody
-
-	if err := c.BindJSON(&requestBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	response, err := services.SendTextMessage(c, requestBody)
-	if err != nil {
+	userId := c.PostForm("userId")
+	messageTo := c.PostForm("messageTo")
+	body := c.PostForm("messageBody")
+	messageId := c.PostForm("messageId")
+	file, header, err := c.Request.FormFile("file")
+	if file != nil && err != nil {
 		c.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
 			Message:    err.Error(),
 			Data:       nil})
 	}
-	c.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "Message sent successfully",
-		Data:       response,
-	})
-}
-
-func SendTextMessageWithPreviewURL(c *gin.Context) {
-	var requestBody models.MessageBody
-	if err := c.BindJSON(&requestBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	var contentType, filename string
+	if file != nil {
+		contentType = header.Header.Get("Content-Type")
+		filename = header.Filename
 	}
-	response, err := services.SendTextMessageWithPreviewURL(c, requestBody)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
+	switch contentType {
+	case "image/jpeg":
+		if messageId != "" {
+			services.SendReplyByImageMessage(c, userId, messageTo, messageId, filename, contentType, file)
+		} else {
+			services.SendImageMessage(c, userId, messageTo, filename, contentType, file)
+		}
+	case "video/mp4":
+		if messageId != "" {
+			services.SendReplyByVideo(c, userId, messageTo, messageId, body, filename, contentType, file)
+		} else {
+			services.SendVideoMessage(c, userId, messageTo, body, filename, contentType, file)
+		}
+	case "audio/mp3":
+	case "application/pdf":
+		if messageId != "" {
+			services.SendReplyByPdfMessage(c, userId, messageTo, messageId, body, filename, contentType, file)
+		} else {
+			services.SendPdfMessage(c, userId, messageTo, filename, contentType, file)
+		}
+	default:
+		if messageId != "" {
+			services.SendReplyByTextMessage(c, userId, messageId, messageTo, body)
+		} else {
+			services.SendTextMessage(c, userId, messageTo, body)
+		}
 	}
-	c.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "Message sent successfully",
-		Data:       response,
-	})
-}
 
-func SendReplyByTextMessage(c *gin.Context) {
-	var requestBody models.MessageBody
-	if err := c.BindJSON(&requestBody); err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-		return
-	}
-	response, _ := services.SendReplyByTextMessage(c, requestBody)
-	c.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "Message sent successfully",
-		Data:       response,
-	})
 }
-
 func SendReplyByReaction(c *gin.Context) {
 	var requestBody models.MessageBody
 	if err := c.BindJSON(&requestBody); err != nil {
@@ -141,141 +129,6 @@ func SendReplyByReaction(c *gin.Context) {
 		return
 	}
 	response, err := services.SendReplyByReaction(c, requestBody)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-	} else {
-		c.JSON(http.StatusOK, Dao.Response{
-			StatusCode: http.StatusOK,
-			Message:    "Message sent successfully",
-			Data:       response,
-		})
-	}
-}
-
-func SendImageMessage(c *gin.Context) {
-	userId := c.PostForm("userId")
-	messageTo := c.PostForm("messageTo")
-	file, header, err := c.Request.FormFile("image")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-	}
-	filename := header.Filename
-	contentType := header.Header.Get("Content-Type")
-
-	services.SendImageMessage(c, userId, messageTo, filename, contentType, file)
-}
-
-func SendReplyByImageMessage(c *gin.Context) {
-	userId := c.PostForm("userId")
-	messageTo := c.PostForm("messageTo")
-	messageId := c.PostForm("messageId")
-	file, header, err := c.Request.FormFile("image")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-	}
-	filename := header.Filename
-	contentType := header.Header.Get("Content-Type")
-	response, err := services.SendReplyByImageMessage(c, userId, messageTo, messageId, filename, contentType, file)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-	} else {
-		c.JSON(http.StatusOK, Dao.Response{
-			StatusCode: http.StatusOK,
-			Message:    "Message sent successfully",
-			Data:       response,
-		})
-	}
-}
-
-func SendVideoMessage(c *gin.Context) {
-	userId := c.PostForm("userId")
-	messageTo := c.PostForm("messageTo")
-	file, header, err := c.Request.FormFile("video")
-	caption := c.PostForm("caption")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-	}
-	filename := header.Filename
-	contentType := header.Header.Get("Content-Type")
-
-	services.SendVideoMessage(c, userId, messageTo, caption, filename, contentType, file)
-}
-
-func SendReplyByVideo(c *gin.Context) {
-	userId := c.PostForm("userId")
-	messageTo := c.PostForm("messageTo")
-	messageId := c.PostForm("messageId")
-	file, header, err := c.Request.FormFile("video")
-	caption := c.PostForm("caption")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-	}
-	filename := header.Filename
-	contentType := header.Header.Get("Content-Type")
-	response, err := services.SendReplyByVideo(c, userId, messageTo, messageId, caption, filename, contentType, file)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-	} else {
-		c.JSON(http.StatusOK, Dao.Response{
-			StatusCode: http.StatusOK,
-			Message:    "Message sent successfully",
-			Data:       response,
-		})
-	}
-}
-
-func SendPdfMessage(c *gin.Context) {
-	userId := c.PostForm("userId")
-	messageTo := c.PostForm("messageTo")
-	file, header, err := c.Request.FormFile("document")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-	}
-	filename := header.Filename
-	contentType := header.Header.Get("Content-Type")
-
-	services.SendPdfMessage(c, userId, messageTo, filename, contentType, file)
-}
-
-func SendReplyByPdfMessage(c *gin.Context) {
-	userId := c.PostForm("userId")
-	messageTo := c.PostForm("messageTo")
-	messageId := c.PostForm("messageId")
-	file, header, err := c.Request.FormFile("document")
-	caption := c.PostForm("caption")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-	}
-	filename := header.Filename
-	contentType := header.Header.Get("Content-Type")
-	response, err := services.SendReplyByPdfMessage(c, userId, messageTo, messageId, caption, filename, contentType, file)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,

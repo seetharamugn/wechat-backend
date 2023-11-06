@@ -90,19 +90,19 @@ func SendBulkMessage(c *gin.Context, userId, templateName string, phoneNumbers [
 	return nil, nil
 }
 
-func SendTextMessage(ctx *gin.Context, messageBody models.MessageBody) (interface{}, error) {
-	WaAccount, err := GetAccessToken(ctx, strconv.Itoa(messageBody.UserId))
+func SendTextMessage(ctx *gin.Context, userId, messageTo, body string) (interface{}, error) {
+	WaAccount, err := GetAccessToken(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
 	payload := models.TextMessage{
 		MessagingProduct: "whatsapp",
 		RecipientType:    "individual",
-		To:               messageBody.MessageTo,
+		To:               messageTo,
 		Type:             "text",
 		Text: models.Text{
 			PreviewUrl: false,
-			Body:       messageBody.MessageBody,
+			Body:       body,
 		},
 	}
 	jsonBody, err := json.Marshal(payload)
@@ -113,12 +113,16 @@ func SendTextMessage(ctx *gin.Context, messageBody models.MessageBody) (interfac
 	if err != nil {
 		return nil, err
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}, bson.M{"$set": bson.M{"lastMessage": messageBody.MessageBody}})
-	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageBody.MessageTo, messageBody.MessageBody, "", "", "text")
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": WaAccount.PhoneNumber}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": WaAccount.PhoneNumber}, bson.M{"$set": bson.M{"lastMessage": body}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, body, "", "", "text")
 	if err != nil {
 		return nil, err
 	}
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "message Sent Successfully",
+		Data:       resp})
 	return resp, nil
 }
 
@@ -152,22 +156,22 @@ func SendTextMessageWithPreviewURL(ctx *gin.Context, messageBody models.MessageB
 	return resp, nil
 }
 
-func SendReplyByTextMessage(ctx *gin.Context, messageBody models.MessageBody) (interface{}, error) {
-	WaAccount, err := GetAccessToken(ctx, strconv.Itoa(messageBody.UserId))
+func SendReplyByTextMessage(ctx *gin.Context, userId, messageId, messageTo, body string) (interface{}, error) {
+	WaAccount, err := GetAccessToken(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
 	payload := models.TextReply{
 		MessagingProduct: "whatsapp",
 		RecipientType:    "individual",
-		To:               messageBody.MessageTo,
+		To:               messageTo,
 		Context: models.Context{
-			MessageId: messageBody.MessageId,
+			MessageId: messageId,
 		},
 		Type: "text",
 		Text: models.Text{
 			PreviewUrl: false,
-			Body:       messageBody.MessageBody,
+			Body:       body,
 		},
 	}
 	jsonBody, err := json.Marshal(payload)
@@ -179,9 +183,9 @@ func SendReplyByTextMessage(ctx *gin.Context, messageBody models.MessageBody) (i
 		return nil, err
 	}
 
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}, bson.M{"$set": bson.M{"lastMessage": messageBody.MessageBody}})
-	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageBody.MessageTo, messageBody.MessageBody, "", messageBody.MessageId, "text")
+	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": WaAccount.PhoneNumber}, bson.M{"$set": bson.M{"lastMessage": body}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, body, "", messageId, "text")
 	if err != nil {
 		return nil, err
 	}
@@ -490,6 +494,7 @@ func SendReplyByPdfMessage(ctx *gin.Context, userId, messageTo, messageId, capti
 	}
 	return resp, nil
 }
+
 func SendLocationMessage(ctx *gin.Context, messageBody models.MessageBody) (interface{}, error) {
 	WaAccount, err := GetAccessToken(ctx, strconv.Itoa(messageBody.UserId))
 	if err != nil {
