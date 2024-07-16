@@ -5,5 +5,11 @@
       "src": "wechat-backend/main.go",
       "use": "@vercel/go"
     }
+  ],
+  "routes": [
+    {
+      "src": "/api/*",
+      "dest": "/api/*"
+    }
   ]
 }
