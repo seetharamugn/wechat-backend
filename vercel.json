@@ -1,15 +1,7 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "wechat-backend/main.go",
-      "use": "@vercel/go"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "wechat-backend/main.go"
-    }
-  ]
+  "builds": [{
+    "src": "./main.go",
+    "use": "@vercel/go",
+    "config": { "maxLambdaSize": "15mb" }
+  }]
 }
