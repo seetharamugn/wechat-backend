@@ -3,9 +3,6 @@
   "builds": [
     {
       "use": "@vercel/go"
-    },
-    "env": {
-      "GO_BUILD_FLAGS": "-ldflags '-s -w'"
     }
   ],
 }
