@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src":  "wechat-backend/*.go",
+      "src":  "wechat-backend/main.go",
       "use": "@vercel/go"
     }
   ]
