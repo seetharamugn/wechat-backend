@@ -4,6 +4,5 @@
       "GO_BUILD_FLAGS": "-ldflags '-s -w'",
       "use": "@vercel/go"
     }
-    }
   }
 }
