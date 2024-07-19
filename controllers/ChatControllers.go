@@ -74,10 +74,17 @@ func SendBulkMessage(c *gin.Context) {
 }
 
 func SendTextMessage(c *gin.Context) {
-	userId := c.PostForm("userId")
-	messageTo := c.PostForm("messageTo")
-	body := c.PostForm("messageBody")
-	messageId := c.PostForm("messageId")
+	var message models.MessageBody
+	if err := c.ShouldBindJSON(&message); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	userId := message.UserId
+	messageTo := message.MessageTo
+	body := message.MessageBody
+	messageId := message.MessageId
 	file, header, err := c.Request.FormFile("file")
 	if file != nil && err != nil {
 		c.JSON(http.StatusBadRequest, Dao.Response{
