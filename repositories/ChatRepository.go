@@ -127,7 +127,7 @@ func SendTextMessage(ctx *gin.Context, userId, messageTo, body string) (interfac
 }
 
 func SendTextMessageWithPreviewURL(ctx *gin.Context, messageBody models.MessageBody) (interface{}, error) {
-	WaAccount, err := GetAccessToken(ctx, strconv.Itoa(messageBody.UserId))
+	WaAccount, err := GetAccessToken(ctx, messageBody.UserId)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func SendReplyByTextMessage(ctx *gin.Context, userId, messageId, messageTo, body
 }
 
 func SendReplyByReaction(ctx *gin.Context, messageBody models.MessageBody) (interface{}, error) {
-	WaAccount, err := GetAccessToken(ctx, strconv.Itoa(messageBody.UserId))
+	WaAccount, err := GetAccessToken(ctx, messageBody.UserId)
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +496,7 @@ func SendReplyByPdfMessage(ctx *gin.Context, userId, messageTo, messageId, capti
 }
 
 func SendLocationMessage(ctx *gin.Context, messageBody models.MessageBody) (interface{}, error) {
-	WaAccount, err := GetAccessToken(ctx, strconv.Itoa(messageBody.UserId))
+	WaAccount, err := GetAccessToken(ctx, messageBody.UserId)
 	if err != nil {
 		return nil, err
 	}
