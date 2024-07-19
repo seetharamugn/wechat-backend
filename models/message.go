@@ -27,7 +27,7 @@ type Body struct {
 }
 
 type MessageBody struct {
-	UserId          int     `json:"userId"`
+	UserId          string     `json:"userId"`
 	MessageTo       string  `json:"messageTo"`
 	MessageBody     string  `json:"messageBody"`
 	MessageId       string  `json:"messageId"`
