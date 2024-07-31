@@ -3,12 +3,13 @@ package controllers
 import (
 	"encoding/csv"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/seetharamugn/wachat/Dao"
 	"github.com/seetharamugn/wachat/models"
 	"github.com/seetharamugn/wachat/services"
-	"io"
-	"net/http"
 )
 
 func GetAllChats(ctx *gin.Context) {

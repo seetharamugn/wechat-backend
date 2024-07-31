@@ -58,51 +58,50 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 	case "document":
 		DocumentMessage(ctx, from, phoneNumber, msg.Document.ID, profileName, msgID, msg.Document.Caption)
 	}
+	// Broadcast the message to all connected clients
+	broadcastMessage(messageBody)
 }
 func WebSocketHandler(ctx *gin.Context) {
 	// Upgrade the connection to a WebSocket
-	w := ctx.Writer
-	r := ctx.Request
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
-		http.Error(w, "Could not upgrade connection", http.StatusBadRequest)
+		ctx.String(http.StatusBadRequest, "Could not open websocket connection")
 		return
 	}
-	defer conn.Close()
 
-	// Register the new client
-	clientsMu.Lock()
 	clients[conn] = true
-	clientsMu.Unlock()
+	defer func() {
+		delete(clients, conn)
+		conn.Close()
+	}()
 
-	// Keep the connection alive
 	for {
-		_, _, err := conn.ReadMessage()
+		// Read message from the WebSocket connection
+		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			clientsMu.Lock()
-			delete(clients, conn) // Remove the client on error
-			clientsMu.Unlock()
 			break
 		}
+
+		var message Dao.WebhookMessage
+		if err := json.Unmarshal(msg, &message); err != nil {
+			continue // Ignore invalid messages
+		}
+		broadcastMessage(message)
 	}
 
 }
 
 // Broadcast message to all WebSocket clients
-func broadcastMessage(messageBody, from, profileName string) {
-	clientsMu.Lock()
-	defer clientsMu.Unlock()
-
+func broadcastMessage(message Dao.WebhookMessage) {
 	for client := range clients {
-		err := client.WriteJSON(map[string]string{
-			"from":        from,
-			"profileName": profileName,
-			"message":     messageBody,
-		})
+		msg, err := json.Marshal(message)
 		if err != nil {
-			fmt.Printf("Error sending message to client: %v\n", err)
+			continue // Ignore if marshaling fails
+		}
+		err = client.WriteMessage(websocket.TextMessage, msg)
+		if err != nil {
 			client.Close()
-			delete(clients, client) // Remove client on error
+			delete(clients, client)
 		}
 	}
 }
