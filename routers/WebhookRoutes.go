@@ -6,6 +6,7 @@ import (
 )
 
 func WebhookRoutes(routes *gin.RouterGroup) {
+	routes.GET("/ws", controllers.WebSocketHandler)
 	routes.GET("/webhook", controllers.VerifyWebhook)
 	routes.POST("/webhook", controllers.HandleIncomingMessage)
 

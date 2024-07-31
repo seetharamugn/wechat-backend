@@ -1,11 +1,12 @@
 package controllers
 
 import (
+	"net/http"
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/seetharamugn/wachat/Dao"
 	"github.com/seetharamugn/wachat/services"
-	"net/http"
-	"os"
 )
 
 func VerifyWebhook(ctx *gin.Context) {
@@ -29,4 +30,8 @@ func HandleIncomingMessage(ctx *gin.Context) {
 	}
 	services.IncomingMessage(ctx, messageBody)
 
+}
+
+func WebSocketHandler(ctx *gin.Context) {
+	services.WebSocketHandler(ctx)
 }

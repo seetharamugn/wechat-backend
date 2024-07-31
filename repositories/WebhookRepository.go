@@ -3,25 +3,39 @@ package repositories
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-json"
+	"github.com/gorilla/websocket"
 	"github.com/seetharamugn/wachat/Dao"
 	"github.com/seetharamugn/wachat/initializers"
 	"github.com/seetharamugn/wachat/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/net/context"
-	"io"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 var ReplyUserCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "replyUser")
+
+var (
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true // Allow all connections (adjust for production)
+		},
+	}
+
+	clients   = make(map[*websocket.Conn]bool) // Connected clients
+	clientsMu sync.Mutex                       // Mutex for safe concurrent access
+)
 
 func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 
@@ -43,6 +57,53 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 		AudioMessage(ctx, from, phoneNumber, msg.Audio.ID, profileName, msgID, msg.Audio.Caption)
 	case "document":
 		DocumentMessage(ctx, from, phoneNumber, msg.Document.ID, profileName, msgID, msg.Document.Caption)
+	}
+}
+func WebSocketHandler(ctx *gin.Context) {
+	// Upgrade the connection to a WebSocket
+	w := ctx.Writer
+	r := ctx.Request
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		http.Error(w, "Could not upgrade connection", http.StatusBadRequest)
+		return
+	}
+	defer conn.Close()
+
+	// Register the new client
+	clientsMu.Lock()
+	clients[conn] = true
+	clientsMu.Unlock()
+
+	// Keep the connection alive
+	for {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			clientsMu.Lock()
+			delete(clients, conn) // Remove the client on error
+			clientsMu.Unlock()
+			break
+		}
+	}
+
+}
+
+// Broadcast message to all WebSocket clients
+func broadcastMessage(messageBody, from, profileName string) {
+	clientsMu.Lock()
+	defer clientsMu.Unlock()
+
+	for client := range clients {
+		err := client.WriteJSON(map[string]string{
+			"from":        from,
+			"profileName": profileName,
+			"message":     messageBody,
+		})
+		if err != nil {
+			fmt.Printf("Error sending message to client: %v\n", err)
+			client.Close()
+			delete(clients, client) // Remove client on error
+		}
 	}
 }
 
