@@ -3,6 +3,15 @@ package repositories
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/gin-gonic/gin"
@@ -15,14 +24,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/net/context"
-	"io"
-	"io/ioutil"
-	"log"
-	"mime/multipart"
-	"net/http"
-	"os"
-	"strconv"
-	"time"
 )
 
 var messageCollection *mongo.Collection = initializers.OpenCollection(initializers.Client, "message")

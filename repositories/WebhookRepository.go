@@ -123,8 +123,10 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 
 	if chat.CreatedBy != to {
 		user := models.Chat{
-			UserName:  profileName,
-			CreatedBy: to,
+			UserName:    profileName,
+			CreatedBy:   profileName,
+			PhoneNumber: to,
+			MessageType: "text",
 			LastMessageBody: models.Body{
 				Text: messageBody,
 			},
