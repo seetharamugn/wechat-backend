@@ -37,10 +37,10 @@ var (
 	clientsMu sync.Mutex                       // Mutex for safe concurrent access
 )
 
-func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
+func IncomingMessage(ctx *gin.Context, messageBody interface{}) {
 
 	fmt.Println(messageBody)
-	msg := messageBody.Entry[0].Changes[0].Value.Messages[0]
+	/*msg := messageBody.Entry[0].Changes[0].Value.Messages[0]
 	from := msg.From
 	phoneNumber := messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber
 	profileName := messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name
@@ -57,7 +57,7 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookMessage) {
 		AudioMessage(ctx, from, phoneNumber, msg.Audio.ID, profileName, msgID, msg.Audio.Caption)
 	case "document":
 		DocumentMessage(ctx, from, phoneNumber, msg.Document.ID, profileName, msgID, msg.Document.Caption)
-	}
+	} */
 	// Broadcast the message to all connected clients
 	broadcastMessage(messageBody)
 }
@@ -82,7 +82,7 @@ func WebSocketHandler(ctx *gin.Context) {
 			break
 		}
 
-		var message Dao.WebhookMessage
+		var message interface{}
 		if err := json.Unmarshal(msg, &message); err != nil {
 			continue // Ignore invalid messages
 		}
@@ -92,7 +92,7 @@ func WebSocketHandler(ctx *gin.Context) {
 }
 
 // Broadcast message to all WebSocket clients
-func broadcastMessage(message Dao.WebhookMessage) {
+func broadcastMessage(message interface{}) {
 	for client := range clients {
 		msg, err := json.Marshal(message)
 		if err != nil {
