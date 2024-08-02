@@ -37,27 +37,35 @@ var (
 	clientsMu sync.Mutex                       // Mutex for safe concurrent access
 )
 
-func IncomingMessage(ctx *gin.Context, messageBody interface{}) {
+func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookResponse) {
 
 	fmt.Println(messageBody)
-	/*msg := messageBody.Entry[0].Changes[0].Value.Messages[0]
-	from := msg.From
+	msg := messageBody.Entry[0].Changes[0].Value.Messages[0].Text.Body
+	from := messageBody.Entry[0].Changes[0].Value.Messages[0].From
 	phoneNumber := messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber
 	profileName := messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name
-	msgID := msg.ID
+	msgID := messageBody.Entry[0].Changes[0].Value.Messages[0].ID
+	messageType := messageBody.Entry[0].Changes[0].Value.Messages[0].Type
 
-	switch msg.Type {
+	messageStatusID := messageBody.Entry[0].Changes[0].Value.Statuses[0].ID
+	messageStatus := messageBody.Entry[0].Changes[0].Value.Statuses[0].Status
+	recipentId := messageBody.Entry[0].Changes[0].Value.Statuses[0].RecipientID
+
+	switch messageType {
 	case "text":
-		TextMessage(ctx, from, phoneNumber, msg.Text.Body, profileName, msgID)
-	case "image":
-		ImageMessage(ctx, from, phoneNumber, msg.Image.ID, profileName, msgID, msg.Image.Caption)
-	case "video":
-		VideoMessage(ctx, from, phoneNumber, msg.Video.ID, profileName, msgID, msg.Video.Caption)
-	case "audio":
-		AudioMessage(ctx, from, phoneNumber, msg.Audio.ID, profileName, msgID, msg.Audio.Caption)
-	case "document":
-		DocumentMessage(ctx, from, phoneNumber, msg.Document.ID, profileName, msgID, msg.Document.Caption)
-	} */
+		TextMessage(ctx, from, phoneNumber, msg, profileName, msgID)
+		/*case "image":
+			ImageMessage(ctx, from, phoneNumber, msgID, profileName, msgID, msg.Image.Caption)
+		case "video":
+			VideoMessage(ctx, from, phoneNumber, msg.Video.ID, profileName, msgID, msg.Video.Caption)
+		case "audio":
+			AudioMessage(ctx, from, phoneNumber, msg.Audio.ID, profileName, msgID, msg.Audio.Caption)
+		case "document":
+			DocumentMessage(ctx, from, phoneNumber, msg.Document.ID, profileName, msgID, msg.Document.Caption)
+		} */
+	}
+
+	UpdateMessageStatus(ctx, messageStatusID, messageStatus, recipentId)
 	// Broadcast the message to all connected clients
 	broadcastMessage(messageBody)
 }
@@ -118,7 +126,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
 		replyUser.UserId = userId
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&chat)
+	chatCollection.FindOne(context.TODO(), bson.M{"from": from, "isActive": true}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 
@@ -126,22 +134,27 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
-			PhoneNumber: from,
+			From:        from,
+			To:          to,
 			MessageType: "text",
 			LastMessageBody: models.Body{
 				Text: messageBody,
 			},
+			MessageId:   messageId,
 			UserID:      replyUser.UserId,
-			SeenStatus:  false,
+			Status:      "Received",
 			UnreadCount: 1,
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
+			IsActive:    true,
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"from": from}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessage": messageBody, "seenStatus": false, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"from": from}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{
+			Text: messageBody,
+		}, "messageId": messageId, "status": "Received", "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
@@ -188,7 +201,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
-			PhoneNumber: from,
+			From:        from,
 			MessageType: "image",
 			LastMessageBody: models.Body{
 				Text:     caption,
@@ -197,7 +210,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 			},
 			UserID:      replyUser.UserId,
 			UnreadCount: 1,
-			SeenStatus:  false,
+			Status:      "Received",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 		}
@@ -254,7 +267,7 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
-			PhoneNumber: to,
+			From:        to,
 			MessageType: "video",
 			LastMessageBody: models.Body{
 				Text:     caption,
@@ -263,7 +276,7 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 			},
 			UserID:      replyUser.UserId,
 			UnreadCount: 1,
-			SeenStatus:  false,
+			Status:      "Received",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 		}
@@ -325,7 +338,7 @@ func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
-			PhoneNumber: to,
+			From:        to,
 			MessageType: "audio",
 			LastMessageBody: models.Body{
 				Text:     caption,
@@ -334,7 +347,7 @@ func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 			},
 			UserID:      replyUser.UserId,
 			UnreadCount: 1,
-			SeenStatus:  false,
+			Status:      "Received",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 		}
@@ -395,7 +408,7 @@ func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
-			PhoneNumber: to,
+			From:        to,
 			MessageType: "document",
 			LastMessageBody: models.Body{
 				Text:     caption,
@@ -404,7 +417,7 @@ func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId
 			},
 			UserID:      replyUser.UserId,
 			UnreadCount: 1,
-			SeenStatus:  false,
+			Status:      "Received",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 		}
@@ -556,4 +569,9 @@ func GenerateRandomString(length int) string {
 	}
 
 	return string(result)
+}
+
+func UpdateMessageStatus(ctx *gin.Context, messageId, status, recipentId string) {
+	messageCollection.UpdateOne(context.TODO(), bson.M{"messageId": messageId}, bson.M{"$set": bson.M{"messageStatus": status}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"messageId": messageId}, bson.M{"$set": bson.M{"readStatus": status, "updatedAt": time.Now()}})
 }

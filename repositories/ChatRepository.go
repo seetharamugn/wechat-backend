@@ -115,7 +115,7 @@ func SendTextMessage(ctx *gin.Context, userId, messageTo, body string) (interfac
 		return nil, err
 	}
 	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "text", "status": "sent", "lastMessage": models.Body{Text: body}, "readStatus": "sent", "updatedAt": time.Now()}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "text", "messageId": response.Messages[0].Id, "status": "sent", "lastMessage": models.Body{Text: body}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, body, "", "", "text")
 	if err != nil {
 		return nil, err
