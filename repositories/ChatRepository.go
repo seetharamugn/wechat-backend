@@ -115,7 +115,7 @@ func SendTextMessage(ctx *gin.Context, userId, messageTo, body string) (interfac
 		return nil, err
 	}
 	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "text", "messageId": response.Messages[0].Id, "status": "sent", "lastMessage": models.Body{Text: body}, "readStatus": "sent", "updatedAt": time.Now()}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "text", "messageId": response.Messages[0].Id, "status": "sent", "lastMessageBody": models.Body{Text: body}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, body, "", "", "text")
 	if err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ func SendTextMessageWithPreviewURL(ctx *gin.Context, messageBody models.MessageB
 		return nil, err
 	}
 	chatCollection.FindOne(context.TODO(), bson.M{"from": messageBody.MessageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageBody.MessageTo}, bson.M{"$set": bson.M{"messageType": "text", "status": "sent", "lastMessage": models.Body{Text: messageBody.MessageBody}, "readStatus": "sent", "updatedAt": time.Now()}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageBody.MessageTo}, bson.M{"$set": bson.M{"messageType": "text", "messageId": response.Messages[0].Id, "status": "sent", "lastMessageBody": models.Body{Text: messageBody.MessageBody}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageBody.MessageTo, messageBody.MessageBody, "", "", "text")
 	if err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func SendReplyByTextMessage(ctx *gin.Context, userId, messageId, messageTo, body
 	}
 
 	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "text", "status": "sent", "lastMessage": models.Body{Text: body}, "readStatus": "sent", "updatedAt": time.Now()}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "text", "status": "sent", "messageId": response.Messages[0].Id, "lastMessageBody": models.Body{Text: body}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, body, "", messageId, "text")
 	if err != nil {
 		return nil, err
@@ -258,7 +258,7 @@ func SendReplyByReaction(ctx *gin.Context, userId, messageId, messageTo, body st
 	}
 
 	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "reaction", "status": "sent", "lastMessage": models.Body{Text: body}, "readStatus": "sent", "updatedAt": time.Now()}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "reaction", "messageId": response.Messages[0].Id, "status": "sent", "lastMessageBody": models.Body{Text: body}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, body, "", messageId, "reaction")
 	if err != nil {
 		return nil, err
@@ -318,7 +318,7 @@ func SendImageMessage(ctx *gin.Context, userId, messageTo, caption, link string)
 	}
 
 	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "image", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "image/jpg"}, "readStatus": "sent", "updatedAt": time.Now()}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "image", "messageId": response.Messages[0].Id, "status": "sent", "lastMessageBody": models.Body{Text: caption, Url: link, MimeType: "image/jpg"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, "", link, "", "image")
 	if err != nil {
 		return nil, err
@@ -369,7 +369,7 @@ func SendReplyByImageMessage(ctx *gin.Context, userId, messageTo, messageId, cap
 	}
 
 	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "image", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "image/jpg"}, "readStatus": "sent", "updatedAt": time.Now()}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "image", "messageId": response.Messages[0].Id, "status": "sent", "lastMessageBody": models.Body{Text: caption, Url: link, MimeType: "image/jpg"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, "", link, messageId, "image")
 	if err != nil {
 		return nil, err
@@ -420,7 +420,7 @@ func SendVideoMessage(ctx *gin.Context, userId, messageTo, caption, link string)
 	}
 
 	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "video", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "video/mp4"}, "readStatus": "sent", "updatedAt": time.Now()}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "video", "messageId": response.Messages[0].Id, "status": "sent", "lastMessageBody": models.Body{Text: caption, Url: link, MimeType: "video/mp4"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, caption, link, "", "video")
 	if err != nil {
 		return nil, err
@@ -472,7 +472,7 @@ func SendReplyByVideo(ctx *gin.Context, userId, messageTo, messageId, caption, l
 	}
 
 	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "video", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "video/mp4"}, "readStatus": "sent", "updatedAt": time.Now()}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "video", "messageId": response.Messages[0].Id, "status": "sent", "lastMessageBody": models.Body{Text: caption, Url: link, MimeType: "video/mp4"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, caption, link, messageId, "video")
 	if err != nil {
 		return nil, err
@@ -505,7 +505,7 @@ func SendPdfMessage(ctx *gin.Context, userId, messageTo, caption, link string) {
 	}
 
 	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "document", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "pdf/application"}, "readStatus": "sent", "updatedAt": time.Now()}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "document", "messageId": response.Messages[0].Id, "status": "sent", "lastMessageBody": models.Body{Text: caption, Url: link, MimeType: "pdf/application"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, "", link, "", "document")
 	if err != nil {
 		return
@@ -546,7 +546,7 @@ func SendReplyByPdfMessage(ctx *gin.Context, userId, messageTo, messageId, capti
 	}
 
 	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "document", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "pdf/application"}, "readStatus": "sent", "updatedAt": time.Now()}})
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "document", "messageId": response.Messages[0].Id, "status": "sent", "lastMessageBody": models.Body{Text: caption, Url: link, MimeType: "pdf/application"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, caption, link, messageId, "document")
 	if err != nil {
 		return nil, err
