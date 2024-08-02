@@ -40,20 +40,44 @@ var (
 func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookResponse) {
 
 	fmt.Println(messageBody)
-	msg := messageBody.Entry[0].Changes[0].Value.Messages[0].Text.Body
-	from := messageBody.Entry[0].Changes[0].Value.Messages[0].From
-	phoneNumber := messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber
-	profileName := messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name
-	msgID := messageBody.Entry[0].Changes[0].Value.Messages[0].ID
-	messageType := messageBody.Entry[0].Changes[0].Value.Messages[0].Type
+	var messageBodyText, from, phoneNumber, profileName, msgID, messageType, messageStatusID, messageStatus, recipentId string
+	// Assuming messageBody is of type WebhookResponse
+	if len(messageBody.Entry) > 0 &&
+		len(messageBody.Entry[0].Changes) > 0 &&
+		len(messageBody.Entry[0].Changes[0].Value.Messages) > 0 {
 
-	messageStatusID := messageBody.Entry[0].Changes[0].Value.Statuses[0].ID
-	messageStatus := messageBody.Entry[0].Changes[0].Value.Statuses[0].Status
-	recipentId := messageBody.Entry[0].Changes[0].Value.Statuses[0].RecipientID
+		// Access the message body
+
+		messageBodyText = messageBody.Entry[0].Changes[0].Value.Messages[0].Text.Body
+		from = messageBody.Entry[0].Changes[0].Value.Messages[0].From
+		phoneNumber = messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber
+		profileName = messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name
+		msgID = messageBody.Entry[0].Changes[0].Value.Messages[0].ID
+		messageType = messageBody.Entry[0].Changes[0].Value.Messages[0].Type
+		// Check if the message body is not empty
+		if messageBodyText != "" {
+			// Message body exists and is not empty
+			fmt.Println("Message body:", messageBodyText)
+		} else {
+			// Message body is empty
+			fmt.Println("Message body is empty.")
+		}
+	} else if len(messageBody.Entry) > 0 &&
+		len(messageBody.Entry[0].Changes) > 0 &&
+		messageBody.Entry[0].Changes[0].Value.Statuses != nil {
+		messageStatusID = messageBody.Entry[0].Changes[0].Value.Statuses[0].ID
+		messageStatus = messageBody.Entry[0].Changes[0].Value.Statuses[0].Status
+		recipentId = messageBody.Entry[0].Changes[0].Value.Statuses[0].RecipientID
+
+		fmt.Println("Status:", messageStatus)
+	} else {
+		// Neither Value.Messages nor Value.Statuses are present
+		fmt.Println("No message body or status information available.")
+	}
 
 	switch messageType {
 	case "text":
-		TextMessage(ctx, from, phoneNumber, msg, profileName, msgID)
+		TextMessage(ctx, from, phoneNumber, messageBodyText, profileName, msgID)
 		/*case "image":
 			ImageMessage(ctx, from, phoneNumber, msgID, profileName, msgID, msg.Image.Caption)
 		case "video":
