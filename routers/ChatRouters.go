@@ -12,4 +12,5 @@ func ChatRouter(routes *gin.RouterGroup) {
 	routes.POST("/sendLocation", controllers.SendLocationMessage)
 	routes.GET("/fetchConversation", controllers.FetchConversation)
 	routes.GET("/getMessagesCount", controllers.GetMessagesCount)
+	routes.GET("/uploadFile", controllers.UploadFile)
 }

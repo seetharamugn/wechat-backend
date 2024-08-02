@@ -38,7 +38,7 @@ func GetAllChat(ctx *gin.Context, PhoneNumber string) (interface{}, error) {
 	options := options.Find()
 	options.SetSort(bson.M{"updatedAt": -1}) // Sort by timestamp in descending order
 	options.SetLimit(20)
-	cursor, err := chatCollection.Find(context.TODO(), bson.M{"createdBy": PhoneNumber}, options)
+	cursor, err := chatCollection.Find(context.TODO(), bson.M{"to": PhoneNumber}, options)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get chats",
@@ -114,8 +114,8 @@ func SendTextMessage(ctx *gin.Context, userId, messageTo, body string) (interfac
 	if err != nil {
 		return nil, err
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": WaAccount.PhoneNumber}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": WaAccount.PhoneNumber}, bson.M{"$set": bson.M{"lastMessage": body}})
+	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "text", "status": "sent", "lastMessage": models.Body{Text: body}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, body, "", "", "text")
 	if err != nil {
 		return nil, err
@@ -123,7 +123,17 @@ func SendTextMessage(ctx *gin.Context, userId, messageTo, body string) (interfac
 	ctx.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
 		Message:    "message Sent Successfully",
-		Data:       resp})
+		Data: map[string]interface{}{
+			"messageId":   response.Messages[0].Id,
+			"chatId":      Chat.ID,
+			"messageType": "text",
+			"messageTo":   messageTo,
+			"messageBody": map[string]interface{}{
+				"text": body,
+			},
+			"isReplyMessage": false,
+		},
+	})
 	return resp, nil
 }
 
@@ -148,12 +158,26 @@ func SendTextMessageWithPreviewURL(ctx *gin.Context, messageBody models.MessageB
 	if err != nil {
 		return nil, err
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}, bson.M{"$set": bson.M{"lastMessage": messageBody.MessageBody}})
+	chatCollection.FindOne(context.TODO(), bson.M{"from": messageBody.MessageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageBody.MessageTo}, bson.M{"$set": bson.M{"messageType": "text", "status": "sent", "lastMessage": models.Body{Text: messageBody.MessageBody}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageBody.MessageTo, messageBody.MessageBody, "", "", "text")
 	if err != nil {
 		return nil, err
 	}
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "message Sent Successfully",
+		Data: map[string]interface{}{
+			"messageId":   response.Messages[0].Id,
+			"chatId":      Chat.ID,
+			"messageType": "text",
+			"messageTo":   messageBody.MessageTo,
+			"messageBody": map[string]interface{}{
+				"text": messageBody.MessageBody,
+			},
+			"isReplyMessage": false,
+		},
+	})
 	return resp, nil
 }
 
@@ -184,29 +208,44 @@ func SendReplyByTextMessage(ctx *gin.Context, userId, messageId, messageTo, body
 		return nil, err
 	}
 
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": WaAccount.PhoneNumber}, bson.M{"$set": bson.M{"lastMessage": body}})
+	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "text", "status": "sent", "lastMessage": models.Body{Text: body}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, body, "", messageId, "text")
 	if err != nil {
 		return nil, err
 	}
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "message Replied Successfully",
+		Data: map[string]interface{}{
+			"messageId":   response.Messages[0].Id,
+			"chatId":      Chat.ID,
+			"messageType": "text",
+			"messageTo":   messageTo,
+			"messageBody": map[string]interface{}{
+				"text": body,
+			},
+			"replyMessageId": messageId,
+			"isReplyMessage": true,
+		},
+	})
 	return resp, nil
 
 }
 
-func SendReplyByReaction(ctx *gin.Context, messageBody models.MessageBody) (interface{}, error) {
-	WaAccount, err := GetAccessToken(ctx, messageBody.UserId)
+func SendReplyByReaction(ctx *gin.Context, userId, messageId, messageTo, body string) (interface{}, error) {
+	WaAccount, err := GetAccessToken(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
 	payload := models.ReplyReaction{
 		MessagingProduct: "whatsapp",
 		RecipientType:    "individual",
-		To:               messageBody.MessageTo,
+		To:               messageTo,
 		Type:             "reaction",
 		Reaction: models.Reaction{
-			MessageId: messageBody.MessageId,
-			Emoji:     messageBody.MessageBody,
+			MessageId: messageId,
+			Emoji:     body,
 		},
 	}
 	jsonBody, err := json.Marshal(payload)
@@ -218,31 +257,38 @@ func SendReplyByReaction(ctx *gin.Context, messageBody models.MessageBody) (inte
 		return nil, err
 	}
 
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageBody.MessageTo}, bson.M{"$set": bson.M{"lastMessage": messageBody.MessageBody}})
-	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageBody.MessageTo, messageBody.MessageBody, "", messageBody.MessageId, "reaction")
+	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "reaction", "status": "sent", "lastMessage": models.Body{Text: body}, "readStatus": "sent", "updatedAt": time.Now()}})
+	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, body, "", messageId, "reaction")
 	if err != nil {
 		return nil, err
 	}
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "message Replied Successfully",
+		Data: map[string]interface{}{
+			"messageId":   response.Messages[0].Id,
+			"chatId":      Chat.ID,
+			"messageType": "reaction",
+			"messageTo":   messageTo,
+			"messageBody": map[string]interface{}{
+				"emoji": body,
+			},
+			"replyMessageId": messageId,
+			"isReplyMessage": true,
+		},
+	})
 	return resp, nil
 }
 
-func SendImageMessage(ctx *gin.Context, userId, messageTo, filename, contentType string, file multipart.File) {
+func SendImageMessage(ctx *gin.Context, userId, messageTo, caption, link string) (interface{}, error) {
 	WaAccount, err := GetAccessToken(ctx, userId)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"Error": err.Error(),
 		})
 		ctx.Abort()
-		return
-	}
-	link, err := UploadToS3(ctx, file, filename, contentType)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": err.Error(),
-		})
-		ctx.Abort()
-		return
+		return nil, err
 	}
 	payload := models.ImageMessage{
 		MessagingProduct: "whatsapp",
@@ -250,7 +296,8 @@ func SendImageMessage(ctx *gin.Context, userId, messageTo, filename, contentType
 		To:               messageTo,
 		Type:             "image",
 		Image: models.Image{
-			Link: link,
+			Link:    link,
+			Caption: caption,
 		},
 	}
 	jsonBody, err := json.Marshal(payload)
@@ -259,7 +306,7 @@ func SendImageMessage(ctx *gin.Context, userId, messageTo, filename, contentType
 			"Error": err.Error(),
 		})
 		ctx.Abort()
-		return
+		return nil, err
 	}
 	response, err := SendMessage(jsonBody, WaAccount.Token, WaAccount.PhoneNumberId, WaAccount.ApiVersion)
 	if err != nil {
@@ -267,33 +314,36 @@ func SendImageMessage(ctx *gin.Context, userId, messageTo, filename, contentType
 			"Error": err.Error(),
 		})
 		ctx.Abort()
-		return
+		return nil, err
 	}
 
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "image", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "image/jpg"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, "", link, "", "image")
-	if err != nil {
-		return
-	}
-	ctx.JSON(http.StatusOK, Dao.Response{
-		StatusCode: http.StatusOK,
-		Message:    "Message sent successfully",
-		Data:       resp,
-	})
-}
-
-func SendReplyByImageMessage(ctx *gin.Context, userId, messageTo, messageId, filename, contentType string, file multipart.File) (interface{}, error) {
-	WaAccount, err := GetAccessToken(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
-	link, err := UploadToS3(ctx, file, filename, contentType)
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "message Replied Successfully",
+		Data: map[string]interface{}{
+			"messageId":   response.Messages[0].Id,
+			"chatId":      Chat.ID,
+			"messageType": "image",
+			"messageTo":   messageTo,
+			"messageBody": map[string]interface{}{
+				"link":    link,
+				"caption": caption,
+			},
+			"isReplyMessage": false,
+		},
+	})
+	return resp, nil
+}
+
+func SendReplyByImageMessage(ctx *gin.Context, userId, messageTo, messageId, caption, link string) (interface{}, error) {
+	WaAccount, err := GetAccessToken(ctx, userId)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": err.Error(),
-		})
-		ctx.Abort()
 		return nil, err
 	}
 	payload := models.ImageReply{
@@ -305,7 +355,8 @@ func SendReplyByImageMessage(ctx *gin.Context, userId, messageTo, messageId, fil
 		},
 		Type: "image",
 		Image: models.Image{
-			Link: link,
+			Link:    link,
+			Caption: caption,
 		},
 	}
 	jsonBody, err := json.Marshal(payload)
@@ -317,24 +368,37 @@ func SendReplyByImageMessage(ctx *gin.Context, userId, messageTo, messageId, fil
 		return nil, err
 	}
 
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "image", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "image/jpg"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, "", link, messageId, "image")
 	if err != nil {
 		return nil, err
 	}
+	ctx.JSON(http.StatusOK, Dao.Response{
+		StatusCode: http.StatusOK,
+		Message:    "message Replied Successfully",
+		Data: map[string]interface{}{
+			"messageId":   response.Messages[0].Id,
+			"chatId":      Chat.ID,
+			"messageType": "image",
+			"messageTo":   messageTo,
+			"messageBody": map[string]interface{}{
+				"link":    link,
+				"caption": caption,
+			},
+			"replyMessageId": messageId,
+			"isReplyMessage": true,
+		},
+	})
 	return resp, nil
 }
 
-func SendVideoMessage(ctx *gin.Context, userId, messageTo, caption, filename, contentType string, file multipart.File) {
+func SendVideoMessage(ctx *gin.Context, userId, messageTo, caption, link string) (interface{}, error) {
 	WaAccount, err := GetAccessToken(ctx, userId)
 	if err != nil {
-		return
+		return nil, err
 	}
-	link, err := UploadToS3(ctx, file, filename, contentType)
-	if err != nil {
-		return
-	}
+
 	payload := models.VideoMessage{
 		MessagingProduct: "whatsapp",
 		RecipientType:    "individual",
@@ -348,39 +412,43 @@ func SendVideoMessage(ctx *gin.Context, userId, messageTo, caption, filename, co
 	fmt.Println(payload)
 	jsonBody, err := json.Marshal(payload)
 	if err != nil {
-		return
+		return nil, err
 	}
 	response, err := SendMessage(jsonBody, WaAccount.Token, WaAccount.PhoneNumberId, WaAccount.ApiVersion)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "video", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "video/mp4"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, caption, link, "", "video")
 	if err != nil {
-		return
+		return nil, err
 	}
 	ctx.JSON(http.StatusOK, Dao.Response{
 		StatusCode: http.StatusOK,
-		Message:    "Message sent successfully",
-		Data:       resp,
+		Message:    "message Replied Successfully",
+		Data: map[string]interface{}{
+			"messageId":   response.Messages[0].Id,
+			"chatId":      Chat.ID,
+			"messageType": "video",
+			"messageTo":   messageTo,
+			"messageBody": map[string]interface{}{
+				"link":    link,
+				"caption": caption,
+			},
+			"isReplyMessage": false,
+		},
 	})
+	return resp, nil
 }
 
-func SendReplyByVideo(ctx *gin.Context, userId, messageTo, messageId, caption, filename, contentType string, file multipart.File) (interface{}, error) {
+func SendReplyByVideo(ctx *gin.Context, userId, messageTo, messageId, caption, link string) (interface{}, error) {
 	WaAccount, err := GetAccessToken(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
-	link, err := UploadToS3(ctx, file, filename, contentType)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": err.Error(),
-		})
-		ctx.Abort()
-		return nil, err
-	}
+
 	payload := models.VideoReply{
 		MessagingProduct: "whatsapp",
 		RecipientType:    "individual",
@@ -403,8 +471,8 @@ func SendReplyByVideo(ctx *gin.Context, userId, messageTo, messageId, caption, f
 		return nil, err
 	}
 
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "video", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "video/mp4"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, caption, link, messageId, "video")
 	if err != nil {
 		return nil, err
@@ -412,12 +480,8 @@ func SendReplyByVideo(ctx *gin.Context, userId, messageTo, messageId, caption, f
 	return resp, nil
 }
 
-func SendPdfMessage(ctx *gin.Context, userId, messageTo, filename, contentType string, file multipart.File) {
+func SendPdfMessage(ctx *gin.Context, userId, messageTo, caption, link string) {
 	WaAccount, err := GetAccessToken(ctx, userId)
-	if err != nil {
-		return
-	}
-	link, err := UploadToS3(ctx, file, filename, contentType)
 	if err != nil {
 		return
 	}
@@ -427,7 +491,8 @@ func SendPdfMessage(ctx *gin.Context, userId, messageTo, filename, contentType s
 		To:               messageTo,
 		Type:             "document",
 		Document: models.Document{
-			Link: link,
+			Link:    link,
+			Caption: caption,
 		},
 	}
 	jsonBody, err := json.Marshal(payload)
@@ -439,8 +504,8 @@ func SendPdfMessage(ctx *gin.Context, userId, messageTo, filename, contentType s
 		return
 	}
 
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "document", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "pdf/application"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, "", link, "", "document")
 	if err != nil {
 		return
@@ -452,19 +517,12 @@ func SendPdfMessage(ctx *gin.Context, userId, messageTo, filename, contentType s
 	})
 }
 
-func SendReplyByPdfMessage(ctx *gin.Context, userId, messageTo, messageId, caption, filename, contentType string, file multipart.File) (interface{}, error) {
+func SendReplyByPdfMessage(ctx *gin.Context, userId, messageTo, messageId, caption, link string) (interface{}, error) {
 	WaAccount, err := GetAccessToken(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
-	link, err := UploadToS3(ctx, file, filename, contentType)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"Error": err.Error(),
-		})
-		ctx.Abort()
-		return nil, err
-	}
+
 	payload := models.DocumentReply{
 		MessagingProduct: "whatsapp",
 		RecipientType:    "individual",
@@ -487,8 +545,8 @@ func SendReplyByPdfMessage(ctx *gin.Context, userId, messageTo, messageId, capti
 		return nil, err
 	}
 
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": messageTo}).Decode(&Chat)
-	chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": messageTo}, bson.M{"$set": bson.M{"lastMessage": link}})
+	chatCollection.FindOne(context.TODO(), bson.M{"from": messageTo}).Decode(&Chat)
+	chatCollection.UpdateOne(context.TODO(), bson.M{"from": messageTo}, bson.M{"$set": bson.M{"messageType": "document", "status": "sent", "lastMessage": models.Body{Text: caption, Url: link, MimeType: "pdf/application"}, "readStatus": "sent", "updatedAt": time.Now()}})
 	resp, err := InsertMessageIntoDB(ctx, Chat.ID, response.Messages[0].Id, WaAccount.PhoneNumber, messageTo, caption, link, messageId, "document")
 	if err != nil {
 		return nil, err
@@ -632,6 +690,8 @@ func UploadToS3(ctx *gin.Context, file multipart.File, filename string, contentT
 	filepath := CloudfrontUrl + filename
 	ctx.JSON(http.StatusOK, gin.H{
 		"filepath": filepath,
+		"mimeType": contentType,
+		"filename": filename,
 	})
 	return filepath, nil
 }

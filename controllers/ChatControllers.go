@@ -75,41 +75,45 @@ func SendBulkMessage(c *gin.Context) {
 }
 
 func SendTextMessage(c *gin.Context) {
-	userId := c.PostForm("userId")
-	messageTo := c.PostForm("messageTo")
-	body := c.PostForm("messageBody")
-	messageId := c.PostForm("messageId")
-	file, header, err := c.Request.FormFile("file")
-	if file != nil && err != nil {
+	var requestBody models.MessageBody
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
 		c.JSON(http.StatusBadRequest, Dao.Response{
 			StatusCode: http.StatusBadRequest,
 			Message:    err.Error(),
 			Data:       nil})
+		return
 	}
-	var contentType, filename string
-	if file != nil {
-		contentType = header.Header.Get("Content-Type")
-		filename = header.Filename
-	}
-	switch contentType {
-	case "image/jpeg":
+
+	userId := requestBody.UserId
+	messageTo := requestBody.MessageTo
+	body := requestBody.MessageBody
+	messageId := requestBody.MessageId
+	messageType := requestBody.MessageType
+	link := requestBody.File.Url
+
+	switch messageType {
+	case "image":
 		if messageId != "" {
-			services.SendReplyByImageMessage(c, userId, messageTo, messageId, filename, contentType, file)
+			services.SendReplyByImageMessage(c, userId, messageTo, messageId, body, link)
 		} else {
-			services.SendImageMessage(c, userId, messageTo, filename, contentType, file)
+			services.SendImageMessage(c, userId, messageTo, body, link)
 		}
-	case "video/mp4":
+	case "video":
 		if messageId != "" {
-			services.SendReplyByVideo(c, userId, messageTo, messageId, body, filename, contentType, file)
+			services.SendReplyByVideo(c, userId, messageTo, messageId, body, link)
 		} else {
-			services.SendVideoMessage(c, userId, messageTo, body, filename, contentType, file)
+			services.SendVideoMessage(c, userId, messageTo, body, link)
 		}
-	case "audio/mp3":
-	case "application/pdf":
+	case "audio":
+	case "document":
 		if messageId != "" {
-			services.SendReplyByPdfMessage(c, userId, messageTo, messageId, body, filename, contentType, file)
+			services.SendReplyByPdfMessage(c, userId, messageTo, messageId, body, link)
 		} else {
-			services.SendPdfMessage(c, userId, messageTo, filename, contentType, file)
+			services.SendPdfMessage(c, userId, messageTo, body, link)
+		}
+	case "reaction":
+		if messageId != "" {
+			services.SendReplyByReaction(c, userId, messageId, messageTo, body)
 		}
 	default:
 		if messageId != "" {
@@ -119,29 +123,6 @@ func SendTextMessage(c *gin.Context) {
 		}
 	}
 
-}
-func SendReplyByReaction(c *gin.Context) {
-	var requestBody models.MessageBody
-	if err := c.BindJSON(&requestBody); err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-		return
-	}
-	response, err := services.SendReplyByReaction(c, requestBody)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, Dao.Response{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Data:       nil})
-	} else {
-		c.JSON(http.StatusOK, Dao.Response{
-			StatusCode: http.StatusOK,
-			Message:    "Message sent successfully",
-			Data:       response,
-		})
-	}
 }
 
 func SendLocationMessage(c *gin.Context) {
@@ -199,5 +180,18 @@ func GetMessagesCount(c *gin.Context) {
 		Message:    "Message count fetch successfully",
 		Data:       response,
 	})
+}
 
+func UploadFile(c *gin.Context) {
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	var contentType, filename string
+	if file != nil {
+		contentType = header.Header.Get("Content-Type")
+		filename = header.Filename
+	}
+	services.UploadFile(c, file, filename, contentType)
 }

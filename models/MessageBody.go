@@ -45,8 +45,8 @@ type ImageMessage struct {
 	Image            Image  `json:"image"`
 }
 type Image struct {
-	Id   string `json:"id"`
-	Link string `json:"link"`
+	Link    string `json:"link"`
+	Caption string `json:"caption"`
 }
 
 // VideoMessage Body

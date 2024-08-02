@@ -13,7 +13,7 @@ type Message struct {
 	ChatId        interface{} `bson:"chatId,d" json:"chatId"`
 	CreatedAt     time.Time   `bson:"createdAt" json:"createdAt"`
 	UpdatedAt     time.Time   `bson:"updatedAt" json:"updatedAt"`
-	DeletedAt     time.Time   `bson:"deletedAt" json:"deletedAt"`
+	IsActive      bool        `bson:"isActive" json:"isActive"`
 	ReadStatus    string      `bson:"readStatus" json:"readStatus"`
 	TemplateId    string      `bson:"templateId" json:"templateId"`
 	ParentId      string      `bson:"parentMessageId" json:"parentMessageId"`
@@ -27,7 +27,8 @@ type Body struct {
 }
 
 type MessageBody struct {
-	UserId          string     `json:"userId"`
+	UserId          string  `json:"userId"`
+	MessageType     string  `json:"messageType"`
 	MessageTo       string  `json:"messageTo"`
 	MessageBody     string  `json:"messageBody"`
 	MessageId       string  `json:"messageId"`
@@ -35,4 +36,5 @@ type MessageBody struct {
 	Longitude       float64 `json:"longitude"`
 	LocationAddress string  `json:"LocationAddress"`
 	LocationName    string  `json:"locationName"`
+	File            Body    `json:"file"`
 }

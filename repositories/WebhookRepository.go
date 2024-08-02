@@ -116,8 +116,9 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	if replyUser.UserId == "" {
 		userId := generateRandom()
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+		replyUser.UserId = userId
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
+	chatCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 
@@ -125,20 +126,22 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
-			PhoneNumber: to,
+			PhoneNumber: from,
 			MessageType: "text",
 			LastMessageBody: models.Body{
 				Text: messageBody,
 			},
-			Status:    "active",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			UserID:      replyUser.UserId,
+			SeenStatus:  false,
+			UnreadCount: 1,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": to}, bson.M{"$set": bson.M{"lastMessage": messageBody, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"from": from}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessage": messageBody, "seenStatus": false, "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
@@ -168,8 +171,9 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	if replyUser.UserId == "" {
 		userId := generateRandom()
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+		replyUser.UserId = userId
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
+	chatCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 	url, token, err := GetUrl(ctx, to, mediaId)
@@ -182,22 +186,26 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	}
 	if chat.CreatedBy != to {
 		user := models.Chat{
-			UserName:  profileName,
-			CreatedBy: to,
+			UserName:    profileName,
+			CreatedBy:   profileName,
+			PhoneNumber: from,
+			MessageType: "image",
 			LastMessageBody: models.Body{
 				Text:     caption,
 				Url:      file,
 				MimeType: "image/jpeg",
 			},
-			Status:    "active",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			UserID:      replyUser.UserId,
+			UnreadCount: 1,
+			SeenStatus:  false,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": to}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{Text: caption, Url: file, MimeType: "image/jpeg"}, "seenStatus": false, "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
@@ -229,8 +237,9 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	if replyUser.UserId == "" {
 		userId := generateRandom()
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+		replyUser.UserId = userId
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
+	chatCollection.FindOne(context.TODO(), bson.M{"phoneNumber": to}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 	url, token, err := GetUrl(ctx, to, mediaId)
@@ -243,22 +252,30 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	}
 	if chat.CreatedBy != to {
 		user := models.Chat{
-			UserName:  profileName,
-			CreatedBy: to,
+			UserName:    profileName,
+			CreatedBy:   profileName,
+			PhoneNumber: to,
+			MessageType: "video",
 			LastMessageBody: models.Body{
 				Text:     caption,
 				Url:      file,
 				MimeType: "video/mp4",
 			},
-			Status:    "active",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			UserID:      replyUser.UserId,
+			UnreadCount: 1,
+			SeenStatus:  false,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": to}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"lastMessageBody": models.Body{
+			Text:     caption,
+			Url:      file,
+			MimeType: "video/mp4",
+		}, "unreadCount": chat.UnreadCount + 1, "seenStatus": false, "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
@@ -291,8 +308,9 @@ func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	if replyUser.UserId == "" {
 		userId := generateRandom()
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+		replyUser.UserId = userId
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
+	chatCollection.FindOne(context.TODO(), bson.M{"phoneNumber": to}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 	url, token, err := GetUrl(ctx, to, mediaId)
@@ -305,22 +323,30 @@ func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	}
 	if chat.CreatedBy != to {
 		user := models.Chat{
-			UserName:  profileName,
-			CreatedBy: to,
+			UserName:    profileName,
+			CreatedBy:   profileName,
+			PhoneNumber: to,
+			MessageType: "audio",
 			LastMessageBody: models.Body{
 				Text:     caption,
 				Url:      file,
 				MimeType: "audio/mp3",
 			},
-			Status:    "active",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			UserID:      replyUser.UserId,
+			UnreadCount: 1,
+			SeenStatus:  false,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": to}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"lastMessageBody": models.Body{
+			Text:     caption,
+			Url:      file,
+			MimeType: "audio/mp3",
+		}, "seenStatus": false, "unreadCount": chat.UnreadCount + 1, "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
@@ -352,8 +378,9 @@ func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId
 	if replyUser.UserId == "" {
 		userId := generateRandom()
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+		replyUser.UserId = userId
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"createdBy": to}).Decode(&chat)
+	chatCollection.FindOne(context.TODO(), bson.M{"phoneNumber": to}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 	url, token, err := GetUrl(ctx, to, mediaId)
@@ -366,22 +393,30 @@ func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId
 	}
 	if chat.CreatedBy != to {
 		user := models.Chat{
-			UserName:  profileName,
-			CreatedBy: to,
+			UserName:    profileName,
+			CreatedBy:   profileName,
+			PhoneNumber: to,
+			MessageType: "document",
 			LastMessageBody: models.Body{
 				Text:     caption,
 				Url:      file,
 				MimeType: "document/pdf",
 			},
-			Status:    "active",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			UserID:      replyUser.UserId,
+			UnreadCount: 1,
+			SeenStatus:  false,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"createdBy": to}, bson.M{"$set": bson.M{"lastMessage": file, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"lastMessageBody": models.Body{
+			Text:     caption,
+			Url:      file,
+			MimeType: "document/pdf",
+		}, "unreadCount": chat.UnreadCount + 1, "seenStatus": false, "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
@@ -440,7 +475,7 @@ func GetUrl(c *gin.Context, phoneNumber, mediaId string) (Dao.ResponseMedia, str
 	defer func(Body io.ReadCloser) {
 		err = Body.Close()
 		if err != nil {
-
+			fmt.Println(err)
 		}
 	}(res.Body)
 	body, err := ioutil.ReadAll(res.Body)
