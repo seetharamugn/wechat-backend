@@ -154,7 +154,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 
-	if chat.From != to {
+	if chat.From != from {
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
