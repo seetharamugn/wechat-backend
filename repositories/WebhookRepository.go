@@ -202,22 +202,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	}
 
 	InsertIncommingMessageIntoDB(ctx, chatId, messageId, from, to, messageBody, "", "", "text")
-	/*
-		message := models.Message{
-			MessageId:   messageId,
-			From:        from,
-			To:          to,
-			MesaageType: "text",
-			MessageBody: models.Body{
-				Text: messageBody,
-			},
-			ChatId:        chatId,
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
-			MessageStatus: "Received",
-		}
-		messageCollection.InsertOne(context.TODO(), message)
-	*/
+
 }
 
 func ReactionMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId, emoji string) {
