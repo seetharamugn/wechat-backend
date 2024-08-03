@@ -362,7 +362,7 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	if err != nil {
 		return
 	}
-	if chat.CreatedBy != to {
+	if chat.From != from {
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
@@ -437,7 +437,7 @@ func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	if err != nil {
 		return
 	}
-	if chat.CreatedBy != to {
+	if chat.From != from {
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,

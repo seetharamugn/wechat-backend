@@ -114,6 +114,8 @@ func SendTextMessage(c *gin.Context) {
 	case "reaction":
 		if messageId != "" {
 			services.SendReplyByReaction(c, userId, messageId, messageTo, body)
+		} else {
+			services.SendReplyByReaction(c, userId, messageId, messageTo, body)
 		}
 	default:
 		if messageId != "" {
