@@ -40,7 +40,7 @@ var (
 func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookResponse) {
 
 	fmt.Println(messageBody)
-	var messageBodyText, from, phoneNumber, profileName, msgID, messageType, messageStatusID, messageStatus, recipentId, Emoji string
+	var messageBodyText, from, phoneNumber, profileName, msgID, messageType, messageStatusID, messageStatus, recipentId, emoji, id string
 	// Assuming messageBody is of type WebhookResponse
 	if len(messageBody.Entry) > 0 &&
 		len(messageBody.Entry[0].Changes) > 0 &&
@@ -57,8 +57,12 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookResponse) {
 		if messageType == "text" {
 			messageBodyText = messageBody.Entry[0].Changes[0].Value.Messages[0].Text.Body
 		} else if messageType == "reaction" {
-			Emoji = messageBody.Entry[0].Changes[0].Value.Messages[0].Reaction.Emoji
-			fmt.Println("Emoji:", Emoji)
+			emoji = messageBody.Entry[0].Changes[0].Value.Messages[0].Reaction.Emoji
+			fmt.Println("Emoji:", emoji)
+		} else if messageType == "image" {
+			messageBodyText = messageBody.Entry[0].Changes[0].Value.Messages[0].Image.Caption
+			id = messageBody.Entry[0].Changes[0].Value.Messages[0].Image.ID
+
 		}
 
 		// Check if the message body is not empty
@@ -86,7 +90,9 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookResponse) {
 	case "text":
 		TextMessage(ctx, from, phoneNumber, messageBodyText, profileName, msgID)
 	case "reaction":
-		ReactionMessage(ctx, from, phoneNumber, Emoji, profileName, msgID, Emoji)
+		ReactionMessage(ctx, from, phoneNumber, emoji, profileName, msgID, emoji)
+	case "image":
+		ImageMessage(ctx, from, phoneNumber, id, profileName, msgID, messageBodyText)
 
 		/*case "image":
 			ImageMessage(ctx, from, phoneNumber, msgID, profileName, msgID, msg.Image.Caption)
@@ -246,7 +252,7 @@ func ReactionMessage(ctx *gin.Context, from, to, messageBody, profileName, messa
 	} else {
 		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": from}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{
 			Text: emoji,
-		}, "status": "Received", "updatedAt": time.Now()}})
+		}, "messageId": messageId, "status": "Received", "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
