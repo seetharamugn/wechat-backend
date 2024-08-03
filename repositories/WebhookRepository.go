@@ -40,20 +40,27 @@ var (
 func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookResponse) {
 
 	fmt.Println(messageBody)
-	var messageBodyText, from, phoneNumber, profileName, msgID, messageType, messageStatusID, messageStatus, recipentId string
+	var messageBodyText, from, phoneNumber, profileName, msgID, messageType, messageStatusID, messageStatus, recipentId, Emoji string
 	// Assuming messageBody is of type WebhookResponse
 	if len(messageBody.Entry) > 0 &&
 		len(messageBody.Entry[0].Changes) > 0 &&
 		len(messageBody.Entry[0].Changes[0].Value.Messages) > 0 {
 
 		// Access the message body
+		//check the Text
 
-		messageBodyText = messageBody.Entry[0].Changes[0].Value.Messages[0].Text.Body
 		from = messageBody.Entry[0].Changes[0].Value.Messages[0].From
 		phoneNumber = messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber
 		profileName = messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name
 		msgID = messageBody.Entry[0].Changes[0].Value.Messages[0].ID
 		messageType = messageBody.Entry[0].Changes[0].Value.Messages[0].Type
+		if messageType == "text" {
+			messageBodyText = messageBody.Entry[0].Changes[0].Value.Messages[0].Text.Body
+		} else if messageType == "reaction" {
+			Emoji = messageBody.Entry[0].Changes[0].Value.Messages[0].Reaction.Emoji
+			fmt.Println("Emoji:", Emoji)
+		}
+
 		// Check if the message body is not empty
 		if messageBodyText != "" {
 			// Message body exists and is not empty
@@ -78,6 +85,9 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookResponse) {
 	switch messageType {
 	case "text":
 		TextMessage(ctx, from, phoneNumber, messageBodyText, profileName, msgID)
+	case "reaction":
+		ReactionMessage(ctx, from, phoneNumber, Emoji, profileName, msgID, Emoji)
+
 		/*case "image":
 			ImageMessage(ctx, from, phoneNumber, msgID, profileName, msgID, msg.Image.Caption)
 		case "video":
@@ -188,6 +198,64 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		Type: "text",
 		Body: models.Body{
 			Text: messageBody,
+		},
+		ChatId:        chatId,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+		ReadStatus:    "Received",
+		MessageStatus: false,
+	}
+	messageCollection.InsertOne(context.TODO(), message)
+}
+
+func ReactionMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId, emoji string) {
+	var chatId interface{}
+	var replyUser models.ReplyUser
+	var chat models.Chat
+	var users models.User
+	ReplyUserCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&replyUser)
+	chatId = replyUser.ID
+	if replyUser.UserId == "" {
+		userId := generateRandom()
+		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
+		replyUser.UserId = userId
+	}
+	chatCollection.FindOne(context.TODO(), bson.M{"phoneNumber": from}).Decode(&chat)
+	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
+	chatId = chat.ID
+	if chat.From != from {
+		user := models.Chat{
+			UserName:    profileName,
+			CreatedBy:   profileName,
+			From:        from,
+			To:          to,
+			MessageType: "reaction",
+			LastMessageBody: models.Body{
+				Text: emoji,
+			},
+			UserID:      replyUser.UserId,
+			UnreadCount: 1,
+			Status:      "Received",
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			IsActive:    true,
+		}
+		data, _ := chatCollection.InsertOne(context.TODO(), user)
+		chatId = data.InsertedID
+
+	} else {
+		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": from}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{
+			Text: emoji,
+		}, "status": "Received", "updatedAt": time.Now()}})
+	}
+
+	message := models.Message{
+		Id:   messageId,
+		From: from,
+		To:   to,
+		Type: "reaction",
+		Body: models.Body{
+			Text: emoji,
 		},
 		ChatId:        chatId,
 		CreatedAt:     time.Now(),

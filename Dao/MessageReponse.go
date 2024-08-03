@@ -163,11 +163,12 @@ type Profile struct {
 }
 
 type Message struct {
-	From      string `json:"from"`
-	ID        string `json:"id"`
-	Text      Text   `json:"text"`
-	Timestamp string `json:"timestamp"`
-	Type      string `json:"type"`
+	From      string   `json:"from"`
+	ID        string   `json:"id"`
+	Text      Text     `json:"text"`
+	Timestamp string   `json:"timestamp"`
+	Type      string   `json:"type"`
+	Reaction  Reaction `json:"reaction"`
 }
 
 type Text struct {
@@ -201,4 +202,9 @@ type Pricing struct {
 type Metadata struct {
 	DisplayPhoneNumber string `json:"display_phone_number"`
 	PhoneNumberID      string `json:"phone_number_id"`
+}
+
+type Reaction struct {
+	Emoji     string `json:"emoji"`
+	MessageID string `json:"message_id"`
 }
