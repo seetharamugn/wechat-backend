@@ -150,7 +150,7 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
 		replyUser.UserId = userId
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"from": from, "isActive": true}).Decode(&chat)
+	chatCollection.FindOne(context.TODO(), bson.M{"from": from}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 
