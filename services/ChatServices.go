@@ -31,7 +31,7 @@ func SendReplyByTextMessage(c *gin.Context, userId, messageId, messageTo, body s
 func SendReactionMessage(c *gin.Context, userId, messageTo, body string) (interface{}, error) {
 	return repositories.SendTextMessage(c, userId, messageTo, body)
 }
-func SendReplyByReactionMessage(c *gin.Context, userId, messageId, messageTo, body string) (interface{}, error) {
+func SendReplyByReaction(c *gin.Context, userId, messageId, messageTo, body string) (interface{}, error) {
 	return repositories.SendReplyByReaction(c, userId, messageId, messageTo, body)
 }
 func SendImageMessage(c *gin.Context, userId, messageTo, caption, link string) (interface{}, error) {
