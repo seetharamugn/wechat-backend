@@ -107,16 +107,6 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookResponse) {
 		AudioMessage(ctx, from, phoneNumber, id, profileName, msgID, messageBodyText)
 	case "document":
 		DocumentMessage(ctx, from, phoneNumber, id, profileName, msgID, messageBodyText)
-
-		/*case "image":
-			ImageMessage(ctx, from, phoneNumber, msgID, profileName, msgID, msg.Image.Caption)
-		case "video":
-			VideoMessage(ctx, from, phoneNumber, msg.Video.ID, profileName, msgID, msg.Video.Caption)
-		case "audio":
-			AudioMessage(ctx, from, phoneNumber, msg.Audio.ID, profileName, msgID, msg.Audio.Caption)
-		case "document":
-			DocumentMessage(ctx, from, phoneNumber, msg.Document.ID, profileName, msgID, msg.Document.Caption)
-		} */
 	}
 
 	UpdateMessageStatus(ctx, messageStatusID, messageStatus, recipentId)
@@ -208,24 +198,26 @@ func TextMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId
 	} else {
 		chatCollection.UpdateOne(context.TODO(), bson.M{"from": from}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{
 			Text: messageBody,
-		}, "messageId": messageId, "status": "Received", "updatedAt": time.Now()}})
+		}, "messageId": messageId, "messageType": "text", "status": "Received", "updatedAt": time.Now()}})
 	}
 
-	message := models.Message{
-		Id:   messageId,
-		From: from,
-		To:   to,
-		Type: "text",
-		Body: models.Body{
-			Text: messageBody,
-		},
-		ChatId:        chatId,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		ReadStatus:    "Received",
-		MessageStatus: false,
-	}
-	messageCollection.InsertOne(context.TODO(), message)
+	InsertIncommingMessageIntoDB(ctx, chatId, messageId, from, to, messageBody, "", "", "text")
+	/*
+		message := models.Message{
+			MessageId:   messageId,
+			From:        from,
+			To:          to,
+			MesaageType: "text",
+			MessageBody: models.Body{
+				Text: messageBody,
+			},
+			ChatId:        chatId,
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+			MessageStatus: "Received",
+		}
+		messageCollection.InsertOne(context.TODO(), message)
+	*/
 }
 
 func ReactionMessage(ctx *gin.Context, from, to, messageBody, profileName, messageId, emoji string) {
@@ -253,6 +245,7 @@ func ReactionMessage(ctx *gin.Context, from, to, messageBody, profileName, messa
 			LastMessageBody: models.Body{
 				Text: emoji,
 			},
+			MessageId:   messageId,
 			UserID:      replyUser.UserId,
 			UnreadCount: 1,
 			Status:      "Received",
@@ -266,24 +259,25 @@ func ReactionMessage(ctx *gin.Context, from, to, messageBody, profileName, messa
 	} else {
 		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": from}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{
 			Text: emoji,
-		}, "messageId": messageId, "status": "Received", "updatedAt": time.Now()}})
+		}, "messageId": messageId, "messageType": "reaction", "status": "Received", "updatedAt": time.Now()}})
 	}
-
-	message := models.Message{
-		Id:   messageId,
-		From: from,
-		To:   to,
-		Type: "reaction",
-		Body: models.Body{
-			Text: emoji,
-		},
-		ChatId:        chatId,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		ReadStatus:    "Received",
-		MessageStatus: false,
-	}
-	messageCollection.InsertOne(context.TODO(), message)
+	InsertIncommingMessageIntoDB(ctx, chatId, messageId, from, to, emoji, "", "", "reaction")
+	/*
+		message := models.Message{
+			MessageId:   messageId,
+			From:        from,
+			To:          to,
+			MesaageType: "reaction",
+			MessageBody: models.Body{
+				Text: emoji,
+			},
+			ChatId:        chatId,
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+			MessageStatus: "Received",
+		}
+		messageCollection.InsertOne(context.TODO(), message)
+	*/
 }
 
 func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, caption string) {
@@ -314,6 +308,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 			UserName:    profileName,
 			CreatedBy:   profileName,
 			From:        from,
+			To:          to,
 			MessageType: "image",
 			LastMessageBody: models.Body{
 				Text:     caption,
@@ -326,31 +321,37 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 			Status:      "Received",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
+			IsActive:    true,
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{Text: caption, Url: file, MimeType: "image/jpeg"}, "status": "Received", "updatedAt": time.Now()}})
-	}
-
-	message := models.Message{
-		Id:   messageId,
-		From: from,
-		To:   to,
-		Type: "image",
-		Body: models.Body{
+		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{
 			Text:     caption,
 			Url:      file,
 			MimeType: "image/jpeg",
-		},
-		ChatId:        chatId,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		ReadStatus:    "Received",
-		MessageStatus: false,
+		}, "messageId": messageId, "messageType": "image", "status": "Received", "updatedAt": time.Now()}})
 	}
-	messageCollection.InsertOne(context.TODO(), message)
+
+	InsertIncommingMessageIntoDB(ctx, chatId, messageId, from, to, caption, file, "", "image")
+	/*
+		message := models.Message{
+			MessageId:   messageId,
+			From:        from,
+			To:          to,
+			MesaageType: "image",
+			MessageBody: models.Body{
+				Text:     caption,
+				Url:      file,
+				MimeType: "image/jpeg",
+			},
+			ChatId:        chatId,
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+			MessageStatus: "Received",
+		}
+		messageCollection.InsertOne(context.TODO(), message)*/
 }
 
 func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, caption string) {
@@ -380,7 +381,9 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
-			From:        to,
+			From:        from,
+			To:          to,
+			MessageId:   messageId,
 			MessageType: "video",
 			LastMessageBody: models.Body{
 				Text:     caption,
@@ -392,6 +395,7 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 			Status:      "Received",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
+			IsActive:    true,
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
@@ -401,26 +405,27 @@ func VideoMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 			Text:     caption,
 			Url:      file,
 			MimeType: "video/mp4",
-		}, "unreadCount": chat.UnreadCount + 1, "seenStatus": false, "updatedAt": time.Now()}})
+		}, "messageId": messageId, "messageType": "video", "unreadCount": chat.UnreadCount + 1, "seenStatus": false, "updatedAt": time.Now()}})
 	}
 
-	message := models.Message{
-		Id:   messageId,
-		From: from,
-		To:   to,
-		Type: "video",
-		Body: models.Body{
-			Text:     caption,
-			Url:      file,
-			MimeType: "video/mp4",
-		},
-		ChatId:        chatId,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		ReadStatus:    "Received",
-		MessageStatus: false,
-	}
-	messageCollection.InsertOne(context.TODO(), message)
+	InsertIncommingMessageIntoDB(ctx, chatId, messageId, from, to, caption, file, "", "video")
+	/*
+		message := models.Message{
+			MessageId:   messageId,
+			From:        from,
+			To:          to,
+			MesaageType: "video",
+			MessageBody: models.Body{
+				Text:     caption,
+				Url:      file,
+				MimeType: "video/mp4",
+			},
+			ChatId:        chatId,
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+			MessageStatus: "Received",
+		}
+		messageCollection.InsertOne(context.TODO(), message) */
 
 }
 
@@ -451,7 +456,9 @@ func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
-			From:        to,
+			From:        from,
+			To:          to,
+			MessageId:   messageId,
 			MessageType: "audio",
 			LastMessageBody: models.Body{
 				Text:     caption,
@@ -463,35 +470,38 @@ func AudioMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 			Status:      "Received",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
+			IsActive:    true,
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"lastMessageBody": models.Body{
+		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{
 			Text:     caption,
 			Url:      file,
 			MimeType: "audio/mp3",
-		}, "seenStatus": false, "unreadCount": chat.UnreadCount + 1, "updatedAt": time.Now()}})
+		}, "messageId": messageId, "messageType": "audio", "status": "Received", "updatedAt": time.Now()}})
 	}
 
-	message := models.Message{
-		Id:   messageId,
-		From: from,
-		To:   to,
-		Type: "audio",
-		Body: models.Body{
-			Text:     caption,
-			Url:      file,
-			MimeType: "audio/mp3",
-		},
-		ChatId:        chatId,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		ReadStatus:    "Received",
-		MessageStatus: false,
-	}
-	messageCollection.InsertOne(context.TODO(), message)
+	InsertIncommingMessageIntoDB(ctx, chatId, messageId, from, to, caption, file, "", "audio")
+	/*
+		message := models.Message{
+			MessageId:   messageId,
+			From:        from,
+			To:          to,
+			MesaageType: "audio",
+			MessageBody: models.Body{
+				Text:     caption,
+				Url:      file,
+				MimeType: "audio/mp3",
+			},
+			ChatId:        chatId,
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+			MessageStatus: "Received",
+		}
+		messageCollection.InsertOne(context.TODO(), message)
+	*/
 }
 
 func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, caption string) {
@@ -506,7 +516,7 @@ func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId
 		ReplyUserCollection.InsertOne(context.TODO(), models.ReplyUser{PhoneNumber: from, UserId: userId, UserName: profileName})
 		replyUser.UserId = userId
 	}
-	chatCollection.FindOne(context.TODO(), bson.M{"phoneNumber": to}).Decode(&chat)
+	chatCollection.FindOne(context.TODO(), bson.M{"from": from}).Decode(&chat)
 	userCollection.FindOne(context.TODO(), bson.M{"phoneNo": to}).Decode(&users)
 	chatId = chat.ID
 	url, token, err := GetUrl(ctx, to, mediaId)
@@ -517,52 +527,56 @@ func DocumentMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId
 	if err != nil {
 		return
 	}
-	if chat.CreatedBy != to {
+	if chat.From != from {
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
-			From:        to,
+			From:        from,
+			To:          to,
 			MessageType: "document",
 			LastMessageBody: models.Body{
 				Text:     caption,
 				Url:      file,
 				MimeType: "document/pdf",
 			},
+			MessageId:   messageId,
 			UserID:      replyUser.UserId,
 			UnreadCount: 1,
 			Status:      "Received",
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
+			IsActive:    true,
 		}
 		data, _ := chatCollection.InsertOne(context.TODO(), user)
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"lastMessageBody": models.Body{
+		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{
 			Text:     caption,
 			Url:      file,
 			MimeType: "document/pdf",
-		}, "unreadCount": chat.UnreadCount + 1, "seenStatus": false, "updatedAt": time.Now()}})
+		}, "messageId": messageId, "messageType": "document", "status": "Received", "updatedAt": time.Now()}})
 	}
-
-	message := models.Message{
-		Id:   messageId,
-		From: from,
-		To:   to,
-		Type: "document",
-		Body: models.Body{
-			Text:     caption,
-			Url:      file,
-			MimeType: "document/pdf",
-		},
-		ChatId:        chatId,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		ReadStatus:    "Received",
-		MessageStatus: false,
-	}
-	messageCollection.InsertOne(context.TODO(), message)
-
+	InsertIncommingMessageIntoDB(ctx, chatId, messageId, from, to, caption, file, "", "audio")
+	/*
+		message := models.Message{
+			MessageId:   messageId,
+			From:        from,
+			To:          to,
+			MesaageType: "document",
+			MessageBody: models.Body{
+				Text:     caption,
+				Url:      file,
+				MimeType: "document/pdf",
+			},
+			ChatId:        chatId,
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+			MessageStatus: "Received",
+			IsActive:      true,
+		}
+		messageCollection.InsertOne(context.TODO(), message)
+	*/
 }
 
 func generateRandom() string {
@@ -687,4 +701,57 @@ func GenerateRandomString(length int) string {
 func UpdateMessageStatus(ctx *gin.Context, messageId, status, recipentId string) {
 	messageCollection.UpdateOne(context.TODO(), bson.M{"messageId": messageId}, bson.M{"$set": bson.M{"messageStatus": status}})
 	chatCollection.UpdateOne(context.TODO(), bson.M{"messageId": messageId}, bson.M{"$set": bson.M{"readStatus": status, "updatedAt": time.Now()}})
+}
+
+func InsertIncommingMessageIntoDB(ctx *gin.Context, chatId interface{}, messageId, from, to, messageBody, link, parentMessageId, messageType string) (*mongo.InsertOneResult, error) {
+	Body := models.Body{}
+	if messageType == "text" {
+		Body = models.Body{
+			Text: messageBody,
+		}
+	} else if messageType == "image" {
+		Body = models.Body{
+			Text:     messageBody,
+			Url:      link,
+			MimeType: "image/jpeg",
+		}
+	} else if messageType == "video" {
+		Body = models.Body{
+			Text:     messageBody,
+			Url:      link,
+			MimeType: "video/mp4",
+		}
+	} else if messageType == "document" {
+		Body = models.Body{
+			Text:     messageBody,
+			Url:      link,
+			MimeType: "application/pdf",
+		}
+	} else if messageType == "reaction" {
+		Body = models.Body{
+			Text: messageBody,
+		}
+	}
+	message := models.Message{
+		MessageId:     messageId,
+		From:          from,
+		To:            to,
+		MesaageType:   messageType,
+		MessageBody:   Body,
+		ChatId:        chatId,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+		MessageStatus: "Received",
+		ParentId:      parentMessageId,
+	}
+	resp, err := messageCollection.InsertOne(context.TODO(), message)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"Error": "Failed to create template",
+		})
+		ctx.Abort()
+		return nil, err
+	}
+	return resp, nil
+
 }

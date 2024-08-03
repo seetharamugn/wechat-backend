@@ -5,19 +5,19 @@ import (
 )
 
 type Message struct {
-	Id            string      `bson:"messageId" json:"messageId"`
+	MessageId     string      `bson:"messageId" json:"messageId"`
 	From          string      `bson:"from" json:"from"`
 	To            string      `bson:"to" json:"to"`
-	Type          string      `bson:"type" json:"type"`
-	Body          Body        `bson:"body" json:"body"`
+	MesaageType   string      `bson:"messageType" json:"messageType"`
+	MessageBody   Body        `bson:"messageBody" json:"messageBody"`
 	ChatId        interface{} `bson:"chatId,d" json:"chatId"`
-	CreatedAt     time.Time   `bson:"createdAt" json:"createdAt"`
-	UpdatedAt     time.Time   `bson:"updatedAt" json:"updatedAt"`
 	IsActive      bool        `bson:"isActive" json:"isActive"`
 	ReadStatus    string      `bson:"readStatus" json:"readStatus"`
 	TemplateId    string      `bson:"templateId" json:"templateId"`
 	ParentId      string      `bson:"parentMessageId" json:"parentMessageId"`
-	MessageStatus bool        `bson:"messageStatus" json:"messageStatus"`
+	MessageStatus string      `bson:"messageStatus" json:"messageStatus"`
+	CreatedAt     time.Time   `bson:"createdAt" json:"createdAt"`
+	UpdatedAt     time.Time   `bson:"updatedAt" json:"updatedAt"`
 }
 
 type Body struct {

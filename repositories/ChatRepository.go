@@ -726,16 +726,16 @@ func InsertMessageIntoDB(ctx *gin.Context, chatId primitive.ObjectID, messageId,
 		}
 	}
 	message := models.Message{
-		Id:            messageId,
+		MessageId:     messageId,
 		From:          phoneNumber,
 		To:            messageTo,
-		Type:          messageType,
-		Body:          Body,
+		MesaageType:   messageType,
+		MessageBody:   Body,
 		ChatId:        chatId,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 		ReadStatus:    "sent",
-		MessageStatus: false,
+		MessageStatus: "sent",
 		ParentId:      parentMessageId,
 	}
 	resp, err := messageCollection.InsertOne(context.TODO(), message)
