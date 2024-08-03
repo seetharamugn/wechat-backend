@@ -170,6 +170,9 @@ type Message struct {
 	Type      string   `json:"type"`
 	Reaction  Reaction `json:"reaction"`
 	Image     Image    `json:"image"`
+	Video     Video    `json:"video"`
+	Audio     Audio    `json:"audio"`
+	Document  Document `json:"document"`
 }
 
 type Text struct {
@@ -211,6 +214,28 @@ type Reaction struct {
 }
 
 type Image struct {
+	Caption  string `json:"caption"`
+	MimeType string `json:"mime_type"`
+	Sha256   string `json:"sha256"`
+	ID       string `json:"id"`
+}
+
+type Video struct {
+	Caption  string `json:"caption"`
+	MimeType string `json:"mime_type"`
+	Sha256   string `json:"sha256"`
+	ID       string `json:"id"`
+}
+
+type Audio struct {
+	Caption  string `json:"caption"`
+	MimeType string `json:"mime_type"`
+	Sha256   string `json:"sha256"`
+	ID       string `json:"id"`
+	Duration string `json:"duration"`
+}
+
+type Document struct {
 	Caption  string `json:"caption"`
 	MimeType string `json:"mime_type"`
 	Sha256   string `json:"sha256"`

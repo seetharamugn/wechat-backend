@@ -62,7 +62,15 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookResponse) {
 		} else if messageType == "image" {
 			messageBodyText = messageBody.Entry[0].Changes[0].Value.Messages[0].Image.Caption
 			id = messageBody.Entry[0].Changes[0].Value.Messages[0].Image.ID
-
+		} else if messageType == "video" {
+			messageBodyText = messageBody.Entry[0].Changes[0].Value.Messages[0].Video.Caption
+			id = messageBody.Entry[0].Changes[0].Value.Messages[0].Video.ID
+		} else if messageType == "audio" {
+			messageBodyText = messageBody.Entry[0].Changes[0].Value.Messages[0].Audio.Caption
+			id = messageBody.Entry[0].Changes[0].Value.Messages[0].Audio.ID
+		} else if messageType == "document" {
+			messageBodyText = messageBody.Entry[0].Changes[0].Value.Messages[0].Document.Caption
+			id = messageBody.Entry[0].Changes[0].Value.Messages[0].Document.ID
 		}
 
 		// Check if the message body is not empty
@@ -93,6 +101,12 @@ func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookResponse) {
 		ReactionMessage(ctx, from, phoneNumber, emoji, profileName, msgID, emoji)
 	case "image":
 		ImageMessage(ctx, from, phoneNumber, id, profileName, msgID, messageBodyText)
+	case "video":
+		VideoMessage(ctx, from, phoneNumber, id, profileName, msgID, messageBodyText)
+	case "audio":
+		AudioMessage(ctx, from, phoneNumber, id, profileName, msgID, messageBodyText)
+	case "document":
+		DocumentMessage(ctx, from, phoneNumber, id, profileName, msgID, messageBodyText)
 
 		/*case "image":
 			ImageMessage(ctx, from, phoneNumber, msgID, profileName, msgID, msg.Image.Caption)
@@ -295,7 +309,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 	if err != nil {
 		return
 	}
-	if chat.CreatedBy != to {
+	if chat.From != from {
 		user := models.Chat{
 			UserName:    profileName,
 			CreatedBy:   profileName,
@@ -307,6 +321,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 				MimeType: "image/jpeg",
 			},
 			UserID:      replyUser.UserId,
+			MessageId:   messageId,
 			UnreadCount: 1,
 			Status:      "Received",
 			CreatedAt:   time.Now(),
@@ -316,7 +331,7 @@ func ImageMessage(ctx *gin.Context, from, to, mediaId, profileName, messageId, c
 		chatId = data.InsertedID
 
 	} else {
-		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{Text: caption, Url: file, MimeType: "image/jpeg"}, "seenStatus": false, "updatedAt": time.Now()}})
+		chatCollection.UpdateOne(context.TODO(), bson.M{"phoneNumber": to}, bson.M{"$set": bson.M{"unreadCount": chat.UnreadCount + 1, "lastMessageBody": models.Body{Text: caption, Url: file, MimeType: "image/jpeg"}, "status": "Received", "updatedAt": time.Now()}})
 	}
 
 	message := models.Message{
