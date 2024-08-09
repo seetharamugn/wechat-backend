@@ -36,9 +36,9 @@ var (
 	clientsMu sync.Mutex                         // Mutex for safe concurrent access
 )
 
-func IncomingMessage(ctx *gin.Context, messageBody1 interface{}) {
-	var messageBody Dao.WebhookResponse
-	fmt.Println(messageBody1)
+func IncomingMessage(ctx *gin.Context, messageBody Dao.WebhookResponse) {
+
+	fmt.Println(messageBody)
 	var messageBodyText, to, from, phoneNumber, profileName, msgID, messageType, messageStatusID, messageStatus, recipentId, emoji, id string
 	// Assuming messageBody is of type WebhookResponse
 	if len(messageBody.Entry) > 0 &&
@@ -111,7 +111,7 @@ func IncomingMessage(ctx *gin.Context, messageBody1 interface{}) {
 	UpdateMessageStatus(ctx, messageStatusID, messageStatus, recipentId)
 	// Broadcast the message to all connected clients
 	recipientIdentifier := to
-	broadcastMessage(messageBody1, recipientIdentifier)
+	broadcastMessage(messageBody, recipientIdentifier)
 }
 
 func WebSocketHandler(ctx *gin.Context) {

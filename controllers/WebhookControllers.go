@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/seetharamugn/wachat/Dao"
 	"net/http"
 	"os"
 
@@ -22,7 +23,7 @@ func VerifyWebhook(ctx *gin.Context) {
 }
 
 func HandleIncomingMessage(ctx *gin.Context) {
-	var messageBody interface{}
+	var messageBody Dao.WebhookResponse
 	if err := ctx.ShouldBind(&messageBody); err != nil {
 		ctx.String(http.StatusBadRequest, "Invalid request")
 		return
