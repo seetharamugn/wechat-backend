@@ -32,15 +32,14 @@ var (
 			return true // Allow all connections (adjust for production)
 		},
 	}
-
-	clients   = make(map[*websocket.Conn]bool) // Connected clients
-	clientsMu sync.Mutex                       // Mutex for safe concurrent access
+	clients   = make(map[string]*websocket.Conn) // Connected clients
+	clientsMu sync.Mutex                         // Mutex for safe concurrent access
 )
 
 func IncomingMessage(ctx *gin.Context, messageBody1 interface{}) {
 	var messageBody Dao.WebhookResponse
 	fmt.Println(messageBody1)
-	var messageBodyText, from, phoneNumber, profileName, msgID, messageType, messageStatusID, messageStatus, recipentId, emoji, id string
+	var messageBodyText, to, from, phoneNumber, profileName, msgID, messageType, messageStatusID, messageStatus, recipentId, emoji, id string
 	// Assuming messageBody is of type WebhookResponse
 	if len(messageBody.Entry) > 0 &&
 		len(messageBody.Entry[0].Changes) > 0 &&
@@ -48,7 +47,7 @@ func IncomingMessage(ctx *gin.Context, messageBody1 interface{}) {
 
 		// Access the message body
 		//check the Text
-
+		to = messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber
 		from = messageBody.Entry[0].Changes[0].Value.Messages[0].From
 		phoneNumber = messageBody.Entry[0].Changes[0].Value.Metadata.DisplayPhoneNumber
 		profileName = messageBody.Entry[0].Changes[0].Value.Contacts[0].Profile.Name
@@ -111,8 +110,10 @@ func IncomingMessage(ctx *gin.Context, messageBody1 interface{}) {
 
 	UpdateMessageStatus(ctx, messageStatusID, messageStatus, recipentId)
 	// Broadcast the message to all connected clients
-	broadcastMessage(messageBody1)
+	recipientIdentifier := to
+	broadcastMessage(messageBody1, recipientIdentifier)
 }
+
 func WebSocketHandler(ctx *gin.Context) {
 	// Upgrade the connection to a WebSocket
 	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
@@ -121,9 +122,11 @@ func WebSocketHandler(ctx *gin.Context) {
 		return
 	}
 
-	clients[conn] = true
+	// Assuming you can get the user identifier from the request or message
+	userIdentifier := ctx.Query("user") // Example: get user from query parameter
+	clients[userIdentifier] = conn
 	defer func() {
-		delete(clients, conn)
+		delete(clients, userIdentifier)
 		conn.Close()
 	}()
 
@@ -138,22 +141,25 @@ func WebSocketHandler(ctx *gin.Context) {
 		if err := json.Unmarshal(msg, &message); err != nil {
 			continue // Ignore invalid messages
 		}
-		broadcastMessage(message)
+		broadcastMessage(message, userIdentifier) // Pass the user identifier
 	}
-
 }
 
-// Broadcast message to all WebSocket clients
-func broadcastMessage(message interface{}) {
-	for client := range clients {
-		msg, err := json.Marshal(message)
-		if err != nil {
-			continue // Ignore if marshaling fails
-		}
-		err = client.WriteMessage(websocket.TextMessage, msg)
-		if err != nil {
-			client.Close()
-			delete(clients, client)
+func broadcastMessage(message interface{}, recipientIdentifier string) {
+	for userIdentifier, client := range clients {
+		// Assuming message has a field "from" to check against the recipient
+		if msgMap, ok := message.(map[string]interface{}); ok {
+			if from, exists := msgMap["from"]; exists && from == recipientIdentifier {
+				msg, err := json.Marshal(message)
+				if err != nil {
+					continue // Ignore if marshaling fails
+				}
+				err = client.WriteMessage(websocket.TextMessage, msg)
+				if err != nil {
+					client.Close()
+					delete(clients, userIdentifier)
+				}
+			}
 		}
 	}
 }
